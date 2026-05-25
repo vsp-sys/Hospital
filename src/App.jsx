@@ -8,7 +8,7 @@ import {
   Building, Users, RefreshCw, Send, ShieldAlert, Heart, Calendar, 
   CreditCard, Clipboard, Database, ShieldCheck, Star, Sparkles, 
   Megaphone, X, Bed, Check, Activity, Award, Thermometer, LogOut, Menu, Lock, Sun, Moon,
-  Bell, AlertTriangle, UserCheck
+  Bell, AlertTriangle, UserCheck, Trash2
 } from 'lucide-react';
 
 // Subcomponents
@@ -52,6 +52,7 @@ import {
   bookAppointmentSync,
   appendAuditLogSync,
   addNotificationSync,
+  deleteNotificationSync,
   wipeAllCollectionsSync
 } from './firebaseSync';
 
@@ -687,6 +688,15 @@ export default function App() {
     });
   };
 
+  const handleDeleteNotification = (notifId) => {
+    deleteNotificationSync(notifId).then(() => {
+      const currentRole = getProfileInfo()?.role || 'User';
+      appendAuditLog(currentRole, `Deleted system communication notification node ID: ${notifId}`);
+    }).catch((err) => {
+      console.error("Failed to delete notification index:", err);
+    });
+  };
+
   const handleLoginSuccess = (role) => {
     setIsLoggedIn(true);
     setActivePersona(role);
@@ -1110,18 +1120,17 @@ export default function App() {
           
           {/* DESKTOP STATUS BAR */}
           <div className="hidden md:flex bg-white py-3 px-6 border-b border-slate-200/85 items-center justify-between shadow-xs sticky top-0 z-40">
-            <div className="flex items-center gap-2">
-              <span className="px-2.5 py-0.5 bg-slate-900 text-teal-400 border border-slate-800 text-[10px] font-bold tracking-wider font-mono rounded">
-                PORTAL: {activePersona.toUpperCase().replace('_', ' ')}
+            <div className="flex items-center gap-2 text-xs font-semibold">
+              <span className="text-slate-400">Workspace</span>
+              <span className="text-slate-300">/</span>
+              <span className="text-slate-800 dark:text-slate-100 font-bold capitalize">
+                {activePersona.replace('_', ' ')} Dashboard
               </span>
             </div>
             
             <div className="flex items-center gap-3">
-              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-slate-50 border border-slate-200 text-slate-550 text-[9.5px] font-mono rounded font-semibold">
-                ✔ SECURE HEALTH SYSTEM
-              </span>
-              <span className="inline-flex items-center gap-1.5 bg-emerald-50 border border-emerald-250 text-emerald-800 text-[9.5px] font-bold tracking-wide uppercase px-2.5 py-0.5 rounded font-mono">
-                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full inline-block animate-pulse" /> Live Connected
+              <span className="text-xs text-slate-500 dark:text-slate-400 font-medium bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-705 px-2.5 py-1 rounded-lg">
+                🕒 {new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
               </span>
               
               <button
@@ -1162,8 +1171,8 @@ export default function App() {
           </div>
 
           {/* MAIN PAGE CANVAS */}
-          <main className="flex-1 p-4 md:p-6 lg:p-8 bg-slate-50/50">
-            <div className="bg-white border border-slate-205 rounded-2xl shadow-xs p-4 sm:p-6 md:p-8 min-h-[550px] animate-fade-in">
+          <main className="flex-1 p-4 md:p-6 lg:p-8 bg-slate-50/40 dark:bg-slate-950/20">
+            <div className="min-h-[550px] animate-fade-in">
           
           {/* 1. Super Admin Module view */}
           {activePersona === 'super_admin' && (
@@ -1487,13 +1496,26 @@ export default function App() {
                                     {notif.title}
                                   </h4>
                                 </div>
-                                <span className={`px-2 py-0.5 text-[8px] font-bold rounded uppercase shrink-0 ${
-                                  isUrgent ? 'bg-rose-100 text-rose-850 dark:bg-rose-900/40 dark:text-rose-300' :
-                                  isWarning ? 'bg-amber-100 text-amber-850 dark:bg-amber-900/40 dark:text-amber-300' :
-                                  'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
-                                }`}>
-                                  {notif.urgency}
-                                </span>
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                  <span className={`px-2 py-0.5 text-[8px] font-bold rounded uppercase ${
+                                    isUrgent ? 'bg-rose-100 text-rose-850 dark:bg-rose-900/40 dark:text-rose-300' :
+                                    isWarning ? 'bg-amber-100 text-amber-850 dark:bg-amber-900/40 dark:text-amber-300' :
+                                    'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                                  }`}>
+                                    {notif.urgency}
+                                  </span>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDeleteNotification(notif.id);
+                                    }}
+                                    className="p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-md transition-colors cursor-pointer"
+                                    title="Delete notification"
+                                    id={`delete-notif-${notif.id}`}
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
                               </div>
                               
                               <p className="text-[11px] text-slate-600 dark:text-slate-350 mt-1.5 leading-relaxed font-sans">

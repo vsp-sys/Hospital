@@ -11,7 +11,7 @@ import {
 import { 
   Calendar, Check, Plus, Edit3, TrendingUp, Sparkles, FolderHeart, 
   HelpCircle, UserCheck, ShieldAlert, Star, RefreshCw, MessageSquare, 
-  Layers, Clock, Table, FileText, ChevronRight, Bed, CreditCard 
+  Layers, Clock, Table, FileText, ChevronRight, Bed, CreditCard, Video, Shuffle 
 } from 'lucide-react';
 
 export default function DoctorDashboard({
@@ -310,6 +310,8 @@ export default function DoctorDashboard({
                 { id: 'ehr', label: 'EHR Prescription Writer', icon: FileText },
                 { id: 'ipd', label: 'IPD Rounds Tracker', icon: Bed },
                 { id: 'labs', label: 'Laboratory Results', badge: labOrders.filter(o => o.status === 'In Progress').length, icon: TrendingUp },
+                { id: 'clinical_decision', label: 'Clinical Decision Support', icon: Sparkles },
+                { id: 'telehealth', label: 'Telehealth Video Desk', icon: Video },
                 { id: 'earnings', label: 'Consultant Compensations', icon: CreditCard }
               ].map(tab => {
                 const TabIcon = tab.icon;
@@ -767,6 +769,210 @@ export default function DoctorDashboard({
             <span className="text-[10px] text-slate-400 uppercase font-mono font-bold tracking-wider mt-4">
               Continuous QA and Patient reviews
             </span>
+          </div>
+        </div>
+      )}
+
+      {activeSubTab === 'clinical_decision' && (
+        <div className="space-y-6 animate-fade-in font-sans">
+          {/* Clinical Decision Support AI Tools */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 text-slate-800">
+            {/* ICD-11 Search & Medical Coding */}
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4">
+              <div className="border-b border-slate-100 pb-2">
+                <h3 className="text-sm font-bold text-slate-850 flex items-center gap-1.5">
+                  <Table className="w-4 h-4 text-indigo-700" />
+                  ICD-10/11 International Medical Coding Lookup
+                </h3>
+              </div>
+              <p className="text-xs text-slate-500 font-sans">Search universal diagnostic coding classifications to map directly into EHR templates.</p>
+              
+              <div className="space-y-2.5">
+                {[
+                  { diagnosis: 'Type 2 Diabetes Mellitus with Ketoacidosis', code: 'ICD-11: 5A11 / ICD-10: E11.1' },
+                  { diagnosis: 'Essential Hypertension (Primary)', code: 'ICD-11: BA00 / ICD-10: I10' },
+                  { diagnosis: 'Acute Obstructive Appendicitis', code: 'ICD-11: DB10 / ICD-10: K35.8' },
+                  { diagnosis: 'Migraine without Aura, Intractable', code: 'ICD-11: 8A80.0 / ICD-10: G43.01' }
+                ].map((icd, idx) => (
+                  <div key={idx} className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg flex justify-between items-center text-xs">
+                    <span className="font-semibold block">{icd.diagnosis}</span>
+                    <span className="font-mono text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded font-bold border border-indigo-150">{icd.code}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Smart drug-to-allergy interactive interaction check */}
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4 text-slate-800">
+              <div className="border-b border-slate-100 pb-2 flex justify-between items-center">
+                <h3 className="text-sm font-bold text-slate-850 flex items-center gap-1.5">
+                  <ShieldAlert className="w-4 h-4 text-rose-600" />
+                  Clinical AI Decision support: Drug-Allergy Interaction Engine
+                </h3>
+                <span className="px-1.5 py-0.5 text-[9px] bg-emerald-100 text-emerald-808 font-bold tracking-wider rounded font-mono">LIVE API SAFE</span>
+              </div>
+              
+              <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl space-y-2 text-xs">
+                <h4 className="font-bold text-rose-900 uppercase tracking-wide flex items-center gap-1">
+                  ⚠ High Risk Alert: Cross-Interaction Detected!
+                </h4>
+                <p className="text-[11px] text-rose-808 leading-relaxed font-sans">
+                  Target Drug: <strong>Penicillin G Benzathine Infusion</strong> matches Patient allergen history of <strong>B-Lactam antibiotics hypersensitivity</strong>!
+                </p>
+                <div className="text-[10px] text-rose-505 font-medium border-t border-rose-150 pt-1.5">
+                  Alternative recommendations: Clindamycin 600mg IV or Erythromycin Oral blocks.
+                </div>
+              </div>
+
+              {/* Patient Education Material sharing */}
+              <div className="border-t border-slate-150 pt-4 space-y-2">
+                <h4 className="text-xs font-bold text-slate-450 uppercase font-mono">Patient Educational Pamphlet Dispatcher</h4>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  {[
+                    { title: 'Post-Op Wound Hygiene.pdf', share: 'Share with ICU Patient' },
+                    { title: 'Chronic Hypertension Care.pdf', share: 'Share with Outpatient' }
+                  ].map((pamp, idx) => (
+                    <div key={idx} className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl flex flex-col justify-between">
+                      <span className="font-bold text-slate-805 block truncate">{pamp.title}</span>
+                      <button className="mt-2 text-left text-[10px] text-indigo-707 hover:text-indigo-900 font-semibold cursor-pointer">
+                        ✔ {pamp.share}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 text-slate-800">
+            {/* Out-of-network referral tracking */}
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4">
+              <div className="border-b border-slate-100 pb-2">
+                <h3 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                  <Shuffle className="w-4 h-4 text-teal-600" />
+                  Specialist Referral & Second Opinions Network
+                </h3>
+              </div>
+              <p className="text-xs text-slate-505 font-sans">Track in-network or out-of-network specialist handovers.</p>
+
+              <div className="space-y-2">
+                {[
+                  { patient: 'Meera Deshmukh', targetDoctor: 'Dr. Vineet Roy (Cardiologist)', reason: 'Severe mitral valve regurgitation evaluation', status: 'Accepted' },
+                  { patient: 'Rahul Mehta', targetDoctor: 'Dr. Sarah Smith (Endocrinology)', reason: 'Complex pituitary adenoma hormone balancing', status: 'Pending Review' }
+                ].map((ref, idx) => (
+                  <div key={idx} className="p-3 bg-slate-50 border border-slate-205 rounded-lg flex items-center justify-between text-xs">
+                    <div>
+                      <strong className="text-slate-905 block font-bold font-sans">Patient: {ref.patient}</strong>
+                      <span className="text-[11px] text-slate-505 block mt-0.5">Referred To: <strong>{ref.targetDoctor}</strong></span>
+                      <span className="text-[10px] text-slate-455 block mt-0.5 italic">Clinical Reason: {ref.reason}</span>
+                    </div>
+                    <span className={`px-2 py-0.5 text-[9px] font-bold rounded ${ref.status === 'Accepted' ? 'bg-emerald-50 text-emerald-808 border border-emerald-202' : 'bg-amber-50 text-amber-805 border border-amber-202'}`}>
+                      {ref.status}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Peer to Peer second opinions request board */}
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4">
+              <div className="border-b border-slate-100 pb-2">
+                <h3 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                  <MessageSquare className="w-4 h-4 text-blue-600" />
+                  Peer-to-Peer Medical Second Opinion Board
+                </h3>
+              </div>
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs space-y-1">
+                <div className="flex justify-between font-bold text-[11px]">
+                  <span>Subject: Complex Glioblastoma Multiforme (GBM) MRI scans</span>
+                  <span className="text-indigo-650">Requested by Me</span>
+                </div>
+                <p className="text-[11px] text-slate-505 font-sans leading-relaxed mt-1">"Scans display sub-centimeter infiltration. Seeking advice on optimal adjuvant Temozolomide cycles combined with Optune therapy timeline."</p>
+                <div className="text-[10px] text-slate-505 font-mono mt-2 bg-white border border-slate-150 p-1.5 rounded">
+                  <strong>Reply from Dr. S. Smith:</strong> "Optimal chemotherapy intervals suggest overlapping Optune arrays at 18 hours daily minimum."
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeSubTab === 'telehealth' && (
+        <div className="space-y-6 animate-fade-in font-sans">
+          {/* Telehealth video session desk and list */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 text-slate-800">
+            
+            {/* Telehealth patient consultation virtual queue */}
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4 col-span-1 text-slate-800">
+              <div className="border-b border-slate-100 pb-2">
+                <h3 className="text-sm font-bold text-slate-805">Upcoming Telehealth virtual appointments</h3>
+              </div>
+              
+              <div className="space-y-2.5">
+                {[
+                  { name: 'Kushal Patil', time: '04:15 PM (In 10 mins)', state: 'Waiting Room', code: 'CONF-810' },
+                  { name: 'Meera Deshmukh', time: '04:45 PM', state: 'Scheduled', code: 'CONF-811' }
+                ].map((tcon, id) => (
+                  <div key={id} className="p-3 bg-slate-50 border border-slate-205 rounded-xl text-xs flex justify-between items-center font-sans">
+                    <div>
+                      <strong className="text-slate-900 font-bold block">{tcon.name}</strong>
+                      <span className="text-indigo-707 font-mono text-[10px] block mt-0.5">{tcon.time}</span>
+                      <span className="text-[9px] text-slate-455 block">Code: {tcon.code}</span>
+                    </div>
+
+                    <div className="text-right space-y-1.5">
+                      <span className={`px-2 py-0.5 text-[9px] font-bold rounded block text-center ${tcon.state === 'Waiting Room' ? 'bg-emerald-50 text-emerald-805 border border-emerald-250 animate-pulse' : 'bg-slate-100 text-slate-600 border-slate-202'}`}>
+                        {tcon.state}
+                      </span>
+                      {tcon.state === 'Waiting Room' && (
+                        <button className="px-2 py-0.5 bg-indigo-650 hover:bg-indigo-700 text-white font-bold text-[9px] rounded cursor-pointer">
+                          Join Call
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Virtual Video consult screen feed simulations */}
+            <div className="lg:col-span-2 bg-slate-950 text-white rounded-2xl p-5 shadow-md space-y-4 flex flex-col justify-between h-[360px]">
+              <div className="flex justify-between items-center bg-slate-905 p-2.5 rounded border border-slate-850">
+                <div>
+                  <span className="text-[9px] font-mono tracking-wider uppercase bg-teal-500 text-slate-950 font-extrabold px-2 py-0.5 rounded inline-block animate-pulse">Consult Live Stream</span>
+                  <h3 className="text-xs font-bold text-white mt-1">Patient Stream: Kushal Patil (#P-810)</h3>
+                </div>
+                <div className="text-right text-[10px] text-slate-400 font-mono">
+                  Duration: 00:08:44 | Audio Stream Safe ✔
+                </div>
+              </div>
+
+              {/* simulated avatar screen */}
+              <div className="flex-1 flex items-center justify-center">
+                <div className="text-center space-y-3 font-sans">
+                  <div className="w-16 h-16 bg-slate-800 border border-slate-700 rounded-full mx-auto flex items-center justify-center text-xl font-bold text-teal-400 font-mono">
+                    KP
+                  </div>
+                  <p className="text-xs text-slate-300 font-sans">Camera simulated feeds. Patient bandwidth rate normal (4 Mbps).</p>
+                </div>
+              </div>
+
+              {/* call controls */}
+              <div className="flex justify-center gap-2.5 pt-4 border-t border-slate-900 font-mono">
+                <button className="px-3 py-1.5 bg-red-650 hover:bg-red-700 text-white font-bold text-[10px] rounded-lg cursor-pointer">
+                  Mute Mic
+                </button>
+                <button className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-[10px] rounded-lg cursor-pointer">
+                  Stop Video
+                </button>
+                <button className="px-3 py-1.5 bg-slate-800 hover:bg-slate-705 text-slate-200 font-bold text-[10px] rounded-lg cursor-pointer">
+                  Share Screen
+                </button>
+                <button className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[10px] rounded-lg cursor-pointer">
+                  Record Call
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

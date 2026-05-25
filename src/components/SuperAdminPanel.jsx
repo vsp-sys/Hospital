@@ -12,7 +12,7 @@ import {
   ShieldAlert, RefreshCw, Send, Check, X, ShieldCheck, 
   HelpCircle, Trash2, Heart, Plus, Users, LayoutDashboard, 
   Settings, Database, FileText, AlertTriangle, KeyRound, Radio, Shield, Filter,
-  TrendingUp, Activity, Server, Clock
+  TrendingUp, Activity, Server, Clock, CreditCard, Layers
 } from 'lucide-react';
 
 import { addLicenseSync, updateLicenseSync, deleteLicenseSync } from '../firebaseSync';
@@ -411,6 +411,8 @@ export default function SuperAdminPanel({
                 { id: 'directory', label: 'Global Case Directory', badge: doctors.length + patients.length, icon: Users },
                 { id: 'tickets', label: 'Support Tickets', badge: tickets.filter(t => t.status === 'Open').length, icon: ShieldAlert },
                 { id: 'compliance', label: 'Security & Compliance', icon: Shield },
+                { id: 'subscriptions', label: 'Subscription Master', icon: CreditCard },
+                { id: 'platform', label: 'Platform & KYC Control', icon: Settings },
                 { id: 'cloud', label: 'Cloud Snapshots', icon: Database }
               ].map(tab => {
                 const TabIcon = tab.icon;
@@ -1569,6 +1571,294 @@ export default function SuperAdminPanel({
 
         </div>
       )}
+
+      {activeTab === 'subscriptions' && (
+        <div className="space-y-6 animate-fade-in font-sans">
+          {/* Subscription & Billing Management UI */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Core Stats */}
+            <div className="bg-white border border-slate-200 p-5 rounded-xl shadow-xs">
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block font-mono">Monthly Recurring Revenue</span>
+              <h3 className="text-2xl font-black text-slate-800 mt-1 font-mono">$48,250 <span className="text-xs text-emerald-500 font-semibold">+12% MoM</span></h3>
+              <p className="text-[10px] text-slate-500 mt-2">ARR Projection: $579,000 | Churn Rate: 1.2%</p>
+            </div>
+            <div className="bg-white border border-slate-200 p-5 rounded-xl shadow-xs">
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block font-mono">Usage-Based Commission Fees</span>
+              <h3 className="text-2xl font-black text-indigo-600 mt-1 font-mono">3.5% / SMS</h3>
+              <p className="text-[10px] text-slate-500 mt-2">Aggregated third-party gateway fee margin set to +1% profit</p>
+            </div>
+            <div className="bg-white border border-slate-200 p-5 rounded-xl shadow-xs">
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block font-mono">Referral Rewards Disbursed</span>
+              <h3 className="text-2xl font-black text-emerald-600 mt-1 font-mono">$3,400 <span className="text-xs text-slate-450 font-normal">this Q</span></h3>
+              <p className="text-[10px] text-slate-500 mt-2">Eligible: 8 active affiliate hospital referrers</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Plan Configuration Dashboard */}
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4">
+              <div className="border-b border-slate-100 pb-2 flex justify-between items-center">
+                <h3 className="text-sm font-bold text-slate-800">SaaS Plan Tier Enforcements</h3>
+                <span className="text-[10px] bg-slate-100 text-slate-500 font-mono px-2 py-0.5 rounded uppercase font-bold">Standard Defaults</span>
+              </div>
+              <div className="space-y-3">
+                {[
+                  { name: 'Basic Plan', cost: 99, docs: 5, patients: 500, storage: '10 GB', active: 30 },
+                  { name: 'Pro Plan', cost: 199, docs: 20, patients: 2000, storage: '50 GB', active: 18 },
+                  { name: 'Enterprise Plan', cost: 499, docs: 'Unlimited', patients: 'Unlimited', storage: '1 TB', active: 12 }
+                ].map((p, idx) => (
+                  <div key={idx} className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-xs">
+                    <div>
+                      <strong className="text-slate-900 font-bold block">{p.name}</strong>
+                      <span className="text-slate-500 font-sans block mt-0.5">Max Doctors: <strong className="text-indigo-600">{p.docs}</strong> • Max Patients: <strong className="text-indigo-650">{p.patients}</strong> • Storage: <strong className="text-slate-600">{p.storage}</strong></span>
+                    </div>
+                    <div className="text-right">
+                      <span className="font-mono font-bold text-slate-800 block">${p.cost}/mo</span>
+                      <span className="text-[9px] bg-emerald-50 text-emerald-700 px-1.5 py-0.2 rounded font-mono font-bold">{p.active} Tenants Active</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Promo Code & Campaign Manager */}
+              <div className="pt-4 border-t border-slate-150 space-y-3">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 font-mono">Active Promotion Codes & Campaigns</h4>
+                <div className="grid grid-cols-2 gap-3 text-xs">
+                  <div className="p-2.5 bg-indigo-50/50 border border-indigo-105 rounded-xl">
+                    <div className="flex justify-between font-bold">
+                      <span className="font-mono text-indigo-700 font-extrabold pb-0.5">LAUNCH20</span>
+                      <span className="text-emerald-600">Active</span>
+                    </div>
+                    <span className="text-[11px] text-slate-505">20% Discount for Mountain hospitals. Validated 4 times.</span>
+                  </div>
+                  <div className="p-2.5 bg-indigo-50/50 border border-indigo-105 rounded-xl">
+                    <div className="flex justify-between font-bold">
+                      <span className="font-mono text-indigo-700 font-extrabold pb-0.5">HEALTHY30</span>
+                      <span className="text-slate-450">Expired</span>
+                    </div>
+                    <span className="text-[11px] text-slate-505">30% Flat off. Extended trial period for early nodes.</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* General Finance Control Settings */}
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4">
+              <div className="border-b border-slate-100 pb-2">
+                <h3 className="text-sm font-bold text-slate-800">Dunning & Renewal Automation Configurations</h3>
+              </div>
+
+              <div className="space-y-4 text-xs font-sans text-slate-705">
+                <div className="space-y-2">
+                  <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider font-mono">Payment Failure Dunning Engine Flow</label>
+                  <div className="grid grid-cols-3 gap-2 text-center text-[10px]">
+                    <div className="p-2 bg-amber-50 border border-amber-200 rounded-lg text-amber-805">
+                      <strong className="block text-xs font-mono font-extrabold pb-0.5">Day 1</strong>
+                      First Warning Email
+                    </div>
+                    <div className="p-2 bg-amber-100 border border-amber-300 rounded-lg text-amber-900">
+                      <strong className="block text-xs font-mono font-extrabold pb-0.5">Day 7</strong>
+                      Second Attempt SMS
+                    </div>
+                    <div className="p-2 bg-rose-50 border border-rose-200 rounded-lg text-rose-805">
+                      <strong className="block text-xs font-mono font-extrabold pb-0.5">Day 14</strong>
+                      Node Auto-Suspended
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 pt-2">
+                  <div>
+                    <span className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider font-mono pb-1">Automated Reminders</span>
+                    <select className="w-full text-xs bg-white border border-slate-300 rounded-lg p-1.5 focus:outline-none">
+                      <option>Send 7 days before expiry</option>
+                      <option>Send 3 days before expiry</option>
+                      <option>Manual Dispatch Only</option>
+                    </select>
+                  </div>
+                  <div>
+                    <span className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider font-mono pb-1">Settlement Currencies</span>
+                    <div className="flex gap-1.5 pt-1.5">
+                      {['USD ($)', 'INR (₹)', 'EUR (€)', 'GBP (£)'].map((curr, i) => (
+                        <span key={i} className="px-1.5 py-0.5 text-[10px] bg-slate-100 border border-slate-200 hover:bg-slate-200 text-slate-700 font-mono rounded select-none cursor-pointer">
+                          {curr}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Referral Tracker Affiliate system */}
+                <div className="pt-4 border-t border-slate-150 space-y-2">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 font-mono">B2B Referral Registry</h4>
+                  <div className="space-y-1.5">
+                    {[
+                      { referrer: 'Mount Sinai Clinic Node', referred: 'City General Wellness', commission: '10% MRR', status: 'Paying' },
+                      { referrer: 'City General Wellness', referred: 'Holy Grace ICU Inst.', commission: '15% MRR', status: 'Pending Approval' }
+                    ].map((ref, idx) => (
+                      <div key={idx} className="flex justify-between items-center text-xs p-2 bg-slate-50 border border-slate-200 rounded-lg">
+                        <div>
+                          <span className="font-semibold block">{ref.referrer} ➜ {ref.referred}</span>
+                          <span className="text-[10px] text-slate-505">Assigned Commission Payout: <strong>{ref.commission}</strong></span>
+                        </div>
+                        <span className={`px-2 py-0.5 text-[9px] font-bold rounded-full ${ref.status === 'Paying' ? 'bg-emerald-50 text-emerald-707 border border-emerald-250' : 'bg-amber-50 text-amber-707 border border-amber-250'}`}>
+                          {ref.status}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'platform' && (
+        <div className="space-y-6 animate-fade-in font-sans">
+          {/* Platform controls, KYC and legal compliance trackers */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+            {/* Document Verification & KYC approval workflows */}
+            <div className="lg:col-span-2 bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4">
+              <div className="border-b border-slate-100 pb-2 flex justify-between items-center">
+                <div>
+                  <h3 className="text-sm font-bold text-slate-800">Hospital KYC document Verification</h3>
+                  <p className="text-xs text-slate-455 font-sans">Approve, decline and inspect license agreements and regulatory certifications of onboarded facilities.</p>
+                </div>
+                <span className="px-2.5 py-0.5 text-[9px] font-mono bg-indigo-100 text-indigo-707 font-bold tracking-wider rounded">6 Facility Audits</span>
+              </div>
+
+              <div className="space-y-3">
+                {[
+                  { name: 'City Dental and Max Clinic', docs: ['State License.pdf', 'Signed Contract Agreement.pdf'], state: 'Verified', progress: '100% Onboarded' },
+                  { name: 'Saint Jude Heart Sanatorium', docs: ['NABH certification.png', 'GST certificate.pdf'], state: 'Pending Approval', progress: '75% Setup Done' },
+                  { name: 'Metro Trauma and Triage Hospital', docs: ['HIPAA Consent Sign.pdf', 'State Board License.pdf'], state: 'Suspended (KYC Overdue)', progress: '10% Setup Done' }
+                ].map((kyc, i) => (
+                  <div key={i} className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex flex-col sm:flex-row sm:items-center sm:justify-between text-xs gap-3">
+                    <div className="space-y-1">
+                      <strong className="text-slate-900 font-bold block">{kyc.name}</strong>
+                      <span className="text-slate-450 block text-[10px] font-sans">Compliance Files: <strong>{kyc.docs.join(', ')}</strong></span>
+                      <span className="inline-block text-[9px] px-2 py-0.5 font-bold uppercase tracking-wider bg-slate-205 text-slate-700 rounded-full font-sans">{kyc.progress}</span>
+                    </div>
+
+                    <div className="flex sm:flex-col items-end justify-between sm:justify-center gap-2">
+                      <span className={`px-2 py-0.5 text-[9px] font-bold rounded ${kyc.state === 'Verified' ? 'bg-emerald-50 text-emerald-805 border border-emerald-202' : kyc.state === 'Pending Approval' ? 'bg-amber-50 text-amber-805 border border-amber-202' : 'bg-rose-50 text-rose-805 border border-rose-202'}`}>
+                        Status: {kyc.state}
+                      </span>
+                      <div className="flex gap-1.5 self-end">
+                        <button className="px-1.5 py-0.5 text-[10px] bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded cursor-pointer">
+                          Approve
+                        </button>
+                        <button className="px-1.5 py-0.5 text-[10px] bg-white border border-slate-250 text-rose-600 hover:bg-rose-50 rounded cursor-pointer">
+                          Recall
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Feature Flags Block */}
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4">
+              <div className="border-b border-slate-100 pb-2">
+                <h3 className="text-sm font-bold text-slate-800">Global feature Flags per subscription Plan</h3>
+              </div>
+
+              <div className="space-y-3 font-sans text-xs">
+                {[
+                  { name: 'Telemedicine Video Cons.', flag: 'TELEMED_CONS_GLOBAL_STATE', desc: 'Allow online virtual portal consultas. On for Pro/Enterprise.', active: true },
+                  { name: 'E-Prescription Auto AI suggestions', flag: 'AI_CLINICAL_DECISION_SUPPORT', desc: 'Predict drug-allergy interactions. Enterprise only.', active: true },
+                  { name: 'Regional SMS Blast alerts', flag: 'SMS_AUTO_ROSTER_ALERT', desc: 'Trigger MSG91 triggers on schedule. On for all.', active: false }
+                ].map((f, i) => (
+                  <div key={i} className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+                    <div className="flex items-center justify-between">
+                      <strong className="text-slate-805 font-semibold block">{f.name}</strong>
+                      <span className={`w-3.5 h-3.5 rounded-full ${f.active ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+                    </div>
+                    <span className="font-mono text-[9px] text-indigo-600 block">{f.flag}</span>
+                    <p className="text-[10px] text-slate-450 mt-1 font-sans">{f.desc}</p>
+                    <button className="text-[9px] font-semibold text-indigo-707 hover:underline pt-1 cursor-pointer">Toggle Flag State</button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Super Admin Roles Panels */}
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4">
+              <div className="border-b border-slate-100 pb-2 flex justify-between items-center">
+                <div>
+                  <h3 className="text-sm font-bold text-slate-800">Super Admin Administrative Team</h3>
+                  <p className="text-xs text-slate-505 font-sans">Invite, assign roles, or suspend sub-level platform admin credentials.</p>
+                </div>
+                <button className="px-2 py-1 bg-slate-900 text-white rounded cursor-pointer font-bold text-[10px]">+ Invite Admin</button>
+              </div>
+
+              <div className="divide-y divide-slate-150">
+                {[
+                  { name: 'Vismay Patil', role: 'Main Super Admin', mail: 'vismaypatil20@gmail.com', logs: 'Managed licensing parameters 4 mins ago' },
+                  { name: 'Shlok P.', role: 'Finance Admin', mail: 'shlokpatil7076@gmail.com', logs: 'Approved mountainside hospital billing invoice' },
+                  { name: 'Raj Patil', role: 'Support Specialist', mail: 'rajpatil8837@gmail.com', logs: 'Resolved tech desk ticket #T-104' },
+                  { name: 'Sarah Jenkins', role: 'Legal & Compliance Auditor', mail: 'sarah.c@medcore.com', logs: 'Updated DPDP Acts template terms to v3.0' }
+                ].map((team, idx) => (
+                  <div key={idx} className="py-2.5 flex items-center justify-between text-xs gap-3">
+                    <div>
+                      <span className="font-bold text-slate-850 block">{team.name} ({team.role})</span>
+                      <span className="text-[10px] text-slate-505 block">{team.mail}</span>
+                      <span className="text-[10px] text-indigo-655 italic font-mono block mt-0.5">✔ {team.logs}</span>
+                    </div>
+                    <select className="text-[10px] bg-white border border-slate-200 p-1 rounded font-semibold cursor-pointer focus:outline-none">
+                      <option>Active Status</option>
+                      <option>On Leave</option>
+                      <option>Suspended</option>
+                    </select>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Technical Systems diagnostics logger */}
+            <div className="bg-slate-900 border border-slate-850 rounded-xl p-5 shadow-xs text-white space-y-4 font-sans">
+              <div className="border-b border-slate-800 pb-2 flex justify-between items-center">
+                <div>
+                  <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400 font-mono">Live Node Health & API Crash Logs</h3>
+                </div>
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-505"></span>
+                </span>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 text-center font-mono">
+                <div className="bg-slate-950 p-2 border border-slate-850 rounded">
+                  <span className="text-[9px] text-slate-500 uppercase font-bold block">Server Load</span>
+                  <strong className="text-emerald-500 text-sm">34.2%</strong>
+                </div>
+                <div className="bg-slate-950 p-2 border border-slate-850 rounded">
+                  <span className="text-[9px] text-slate-500 uppercase font-bold block">Free RAM</span>
+                  <strong className="text-emerald-500 text-sm">6.1 GB</strong>
+                </div>
+                <div className="bg-slate-950 p-2 border border-slate-850 rounded">
+                  <span className="text-[9px] text-slate-500 uppercase font-bold block">DB Uptime</span>
+                  <strong className="text-teal-400 text-sm">99.99%</strong>
+                </div>
+              </div>
+
+              {/* simulated logs terminal */}
+              <div className="bg-slate-950 p-3 rounded border border-slate-850 font-mono text-[9px] space-y-1.5 h-36 overflow-y-auto text-slate-350">
+                <p className="text-slate-450">[2026-05-25 10:13:22] - INF - AWS Sharding clusters reporting normal latency indices.</p>
+                <p className="text-emerald-500">[2026-05-25 10:15:00] - MSG - Firestore rules loaded and verified. Permissive sandbox unlocked.</p>
+                <p className="text-amber-500">[2026-05-25 10:17:11] - WRN - SMS Twilio endpoint responded code 103 (mock API bypass active).</p>
+                <p className="text-slate-450">[2026-05-25 10:20:05] - INF - DB maintenance cron successfully executed. 0 stale sessions purged.</p>
+                <p className="text-rose-500">[2026-05-25 10:25:12] - ERR - Bed Release timer expired for Bed #302. Successfully dispatched broadcast.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
         </div>
       </div>
 
@@ -1625,7 +1915,7 @@ export default function SuperAdminPanel({
                 <input
                   required
                   type="email"
-                  placeholder="e.g. admin@gmail.com"
+                  placeholder="abc@gmail.com"
                   value={hospEmail}
                   onChange={(e) => setHospEmail(e.target.value)}
                   className="w-full px-3 py-2 text-xs bg-white border border-slate-350 focus:border-indigo-550 focus:outline-hidden rounded-lg text-slate-800"
@@ -1778,7 +2068,7 @@ export default function SuperAdminPanel({
                 <input
                   required
                   type="email"
-                  placeholder="e.g. r.carter@gmail.com"
+                  placeholder="abc@gmail.com"
                   value={adminEmail}
                   onChange={(e) => setAdminEmail(e.target.value)}
                   className="w-full px-3 py-2 text-xs bg-white border border-slate-355 rounded-lg text-slate-800"

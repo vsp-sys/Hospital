@@ -305,6 +305,8 @@ export default function StaffWorkspace({
                   { id: 'medication', label: 'Medication (MAR)', badge: medications.filter(m => m.status === 'Active').length, icon: Layers },
                   { id: 'fluids', label: 'Fluid Balancing', icon: Droplet },
                   { id: 'labs_coor', label: 'Labs Diagnostics', badge: labOrders.filter(o => o.status === 'Requested').length, icon: Clipboard, badgeColor: 'bg-rose-600 animate-pulse' },
+                  { id: 'wound_care', label: 'Wound & IV Line Log', icon: Sparkles },
+                  { id: 'emergency_code', label: 'Code Blue Response', icon: ShieldAlert },
                   { id: 'queues', label: 'Receptionist Queue', badge: appointments.filter(a => a.status === 'Scheduled').length, icon: Clipboard },
                   { id: 'handover', label: 'Shift Handovers', badge: handoffs.length, icon: RefreshCw }
                 ];
@@ -975,6 +977,178 @@ export default function StaffWorkspace({
         </div>
       )}
 
+      {activeSubTab === 'wound_care' && (
+        <div className="space-y-6 animate-fade-in font-sans">
+          {/* Wound Management and Cannulation Tracking */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 text-slate-800">
+            
+            {/* Pressure Ulcer monitoring systems */}
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4">
+              <div className="border-b border-slate-100 pb-2">
+                <h3 className="text-sm font-bold text-slate-805">Wound Care Tracking & Pressure Ulcer Prevention</h3>
+              </div>
+              <p className="text-xs text-slate-500 font-sans">Braden Scale risk assessment logs paired with active wound healing stages.</p>
+
+              <div className="space-y-3">
+                {[
+                  { patient: 'Arjun Sharma', location: 'Sacral Region', BradenScore: '14 (Moderate Risk)', stage: 'Stage II (Partial Thickness Skinitis)', dressing: 'Duoderm Hydrocolloid Applied 4 hrs ago' },
+                  { patient: 'Meera Deshmukh', location: 'Left Lateral Heel', BradenScore: '19 (Low Risk / Healthy)', stage: 'Stage I (Non-blanchable erythema)', dressing: 'Allevyn Foam Protection' }
+                ].map((wound, idx) => (
+                  <div key={idx} className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs space-y-1.5 font-sans">
+                    <div className="flex justify-between items-center bg-slate-100 p-1.5 rounded">
+                      <strong className="text-slate-905 block font-bold">Patient: {wound.patient}</strong>
+                      <span className="text-[10px] bg-indigo-50 text-indigo-707 border border-indigo-200 font-bold px-1.5 py-0.2 rounded font-mono">Braden: {wound.BradenScore}</span>
+                    </div>
+                    <div className="text-slate-650 font-sans mt-1 space-y-0.5">
+                      <div>Anatomical Location: <strong className="text-slate-800">{wound.location}</strong></div>
+                      <div>Staging Scale: <strong className="text-rose-650">{wound.stage}</strong></div>
+                      <div>Dressing Status: <strong className="text-slate-707">{wound.dressing}</strong></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* IV Cannulation & Lines Logs */}
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4 text-slate-850">
+              <div className="border-b border-slate-100 pb-2 flex justify-between items-center">
+                <h3 className="text-sm font-bold text-slate-800">IV Line & Catheter Site Logbook</h3>
+                <span className="px-1.5 py-0.5 text-[9px] bg-teal-50 text-teal-800 font-bold uppercase rounded font-mono">3 Active Lines</span>
+              </div>
+
+              <div className="space-y-2.5">
+                {[
+                  { patient: 'Arjun Sharma', type: 'Peripheral IV (20G Pink)', site: 'Right forearm hand vein', date: '2026-05-24', healthy: 'Healthy (Phlebitis Grade 0)' },
+                  { patient: 'Meera Deshmukh', type: 'Central PICC Triple-Lumen', site: 'Right basilic vein route', date: '2026-05-22', healthy: 'Flushed & patent - no warmth observed' }
+                ].map((line, idx) => (
+                  <div key={idx} className="p-3 bg-slate-55 border border-slate-200 rounded-lg text-xs font-sans space-y-1">
+                    <div className="flex justify-between font-bold">
+                      <span className="text-slate-900">{line.patient}</span>
+                      <span className="text-indigo-605 font-mono">{line.type}</span>
+                    </div>
+                    <p className="text-[11px] text-slate-505">Insertion Site: <strong>{line.site}</strong> | Date: <strong>{line.date}</strong></p>
+                    <span className="block text-[10px] font-bold text-emerald-700">✔ status check: {line.healthy}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 text-slate-805">
+            {/* Visual Pain assessment slider log */}
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4">
+              <div className="border-b border-slate-100 pb-2">
+                <h3 className="text-sm font-bold text-slate-800">Pain Assessment Scale (Wong-Baker system)</h3>
+              </div>
+              <p className="text-xs text-slate-500 font-sans">Log pain levels daily for inpatient rounds assessments.</p>
+
+              <div className="space-y-4 pt-1 font-sans">
+                <div>
+                  <div className="flex justify-between items-center text-xs text-slate-700 pb-1">
+                    <span>Patient: <strong>Arjun Sharma</strong></span>
+                    <strong className="text-rose-605 text-xs font-bold font-mono">Pain Scale: 6 / 10</strong>
+                  </div>
+                  <input type="range" min="0" max="10" defaultValue="6" className="w-full accent-rose-600 cursor-pointer" />
+                  <div className="flex justify-between text-[9px] text-slate-400 font-mono pt-1">
+                    <span>0 - No Pain</span>
+                    <span>5 - Moderate</span>
+                    <span>10 - Worst Pain</span>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-slate-50 border border-slate-250 rounded-lg text-xs font-sans">
+                  <span className="font-bold text-slate-800 block">Assessment Guideline:</span>
+                  <p className="text-slate-500 mt-1">Grade 5 and above warrants direct notification to attending medical consultants and trigger PRN Tramadol/Fentanyl as prescribed.</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Nurse notes scheduler progress files */}
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4">
+              <div className="border-b border-slate-100 pb-2">
+                <h3 className="text-sm font-bold text-slate-800">Nurses Daily Progress sheets notes</h3>
+              </div>
+              <div className="space-y-3 pt-1 text-xs">
+                {[
+                  { time: '09:30 AM', nurse: 'Sarah J.', note: 'Patient extremely restless. Sacral dressing Stage II healthy without exudate. Repositioned 30 degrees lateral left.' },
+                  { time: '11:00 AM', nurse: 'Sarah J.', note: 'Hourly vitals done. Heart rate 82 bpm, SpO2 97% on room air. Infused scheduled paracetamol IV.' }
+                ].map((note, idx) => (
+                  <div key={idx} className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+                    <div className="flex justify-between text-[11px] font-bold text-indigo-707 font-mono">
+                      <span>⏰ Time: {note.time}</span>
+                      <span>Assigned: {note.nurse}</span>
+                    </div>
+                    <p className="text-[11.5px] text-slate-505 font-sans leading-relaxed">{note.note}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeSubTab === 'emergency_code' && (
+        <div className="space-y-6 animate-fade-in font-sans">
+          {/* Code Blue Response systems */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 text-slate-805">
+            
+            {/* Defibrillators Crash card audit checklists */}
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4 col-span-1">
+              <div className="border-b border-slate-100 pb-2 flex justify-between items-center">
+                <h3 className="text-sm font-bold text-slate-850">Crash Cart Items checklist</h3>
+                <span className="px-2 py-0.5 text-[9px] bg-slate-100 border border-slate-200 font-bold tracking-wider rounded font-mono text-slate-705">DAILY AUDIT</span>
+              </div>
+              
+              <div className="space-y-2 text-xs">
+                {[
+                  { name: 'Defibrillator Battery Charge Checked', ok: true },
+                  { name: 'Ambu bag & Intubation Tubes', ok: true },
+                  { name: 'Epinephrine & Atropine Stock counts', ok: true },
+                  { name: 'Laryngoscope Blades validated', ok: true },
+                  { name: 'Suction Unit functioning test', ok: true }
+                ].map((item, idx) => (
+                  <div key={idx} className="flex items-center justify-between p-2 bg-slate-50 border border-slate-200 rounded-lg font-sans">
+                    <span className="font-medium text-slate-750">{item.name}</span>
+                    <span className="px-1.5 py-0.5 rounded text-[10px] bg-emerald-50 text-emerald-800 border border-emerald-202 font-bold font-mono">PASSED ✔</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Code Blue Emergency Response dispatcher logs */}
+            <div className="lg:col-span-2 bg-rose-950 text-white rounded-2xl p-5 shadow-md space-y-4 flex flex-col justify-between h-[360px] font-sans">
+              <div className="flex justify-between items-center bg-rose-900/40 p-3 rounded border border-rose-900 text-rose-100">
+                <div>
+                  <span className="text-[9px] font-mono tracking-wider uppercase bg-white text-rose-950 font-extrabold px-2 py-0.5 rounded inline-block animate-pulse">EMERGENCY DISPATCH LIVE</span>
+                  <h3 className="text-xs font-bold text-white mt-1">Code Blue Broadcast Registry Log</h3>
+                </div>
+                <div className="text-right text-[10px] text-rose-250 font-mono">
+                  Site: ICU Unit Room 302 | Response Team Activated 
+                </div>
+              </div>
+
+              {/* simulated timeline feed */}
+              <div className="flex-grow overflow-y-auto space-y-2 max-h-[160px] p-2 bg-rose-955/20 rounded font-mono text-[10px] text-rose-100">
+                <p className="text-rose-300">[11:04 AM] CPR protocol Initiated. Attending Nurse S. Shinde started cardiac chest compressions.</p>
+                <p className="text-rose-300">[11:05 AM] Intubation complete. Airway locked via ET tube #7.5 by Dr. Roy.</p>
+                <p className="text-rose-150 font-bold">[11:06 AM] Epinephrine 1mg IV Bolus administered. Witnessed by Nurse Sarah J.</p>
+                <p className="text-rose-150 font-bold">[11:07 AM] AED shock delivered. 150 Joules. Bi-Phasic. Patient resumed sinus rhythm.</p>
+              </div>
+
+              {/* simulated tools triggers */}
+              <div className="pt-4 border-t border-rose-900 flex justify-end gap-2 text-xs">
+                <button className="px-3 py-1.5 bg-rose-900 border border-rose-810 hover:bg-rose-800 text-white font-bold rounded-lg cursor-pointer">
+                  MOCK DISPATCH CODE BLUE ALARM
+                </button>
+                <button className="px-3 py-1.5 bg-white text-rose-950 font-bold rounded-lg cursor-pointer">
+                  MARK ALM RESOLVED
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {activeSubTab === 'labs_coor' && (
         <div className="space-y-4 animate-fade-in font-sans">
           <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs">
@@ -1439,7 +1613,7 @@ export default function StaffWorkspace({
                       type="email"
                       value={newStaffEmail}
                       onChange={(e) => setNewStaffEmail(e.target.value)}
-                      placeholder="clara@gmail.com"
+                      placeholder="abc@gmail.com"
                       className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 border border-slate-205 focus:outline-hidden focus:border-indigo-600 rounded-xl text-slate-900 font-sans"
                     />
                   </div>

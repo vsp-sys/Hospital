@@ -1,10 +1,10 @@
 {
-  "projectId": "remixed-project-id",
-  "appId": "remixed-app-id",
-  "apiKey": "remixed-api-key",
-  "authDomain": "remixed-auth-domain",
-  "firestoreDatabaseId": "remixed-firestore-database-id",
-  "storageBucket": "remixed-storage-bucket",
-  "messagingSenderId": "remixed-messaging-sender-id",
-  "measurementId": "remixed-measurement-id"
+  "projectId": "inspirational-optics-rmvz5",
+  "appId": "1:633451092849:web:f0784fabb173b9d01674d0",
+  "apiKey": "AIzaSyBnEm4HuGYqsLB_PNAFnQwoJthX0mzyseo",
+  "authDomain": "inspirational-optics-rmvz5.firebaseapp.com",
+  "firestoreDatabaseId": "ai-studio-e48188a8-22ef-4ad2-b35d-f890a90d69e2",
+  "storageBucket": "inspirational-optics-rmvz5.firebasestorage.app",
+  "messagingSenderId": "633451092849",
+  "measurementId": ""
 }

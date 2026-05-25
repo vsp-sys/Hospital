@@ -503,6 +503,15 @@ export async function deleteLicenseSync(licId) {
   }
 }
 
+export async function deleteNotificationSync(notifId) {
+  const path = 'notifications';
+  try {
+    await deleteDoc(doc(db, path, notifId));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, `${path}/${notifId}`);
+  }
+}
+
 export async function wipeAllCollectionsSync() {
   const collectionsList = [
     'hospitals', 'branches', 'beds', 'doctors', 'patients', 

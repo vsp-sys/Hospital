@@ -465,7 +465,10 @@ export default function BranchAdminPanel({
                 { id: 'staff', label: 'Staff & Patients', badge: doctors.length + patients.length, icon: Users },
                 { id: 'inventory', label: 'Drug Inventory', badge: inventoryItems.filter(i => i.stockLevel < i.criticalThreshold).length, icon: Layers, badgeColor: 'bg-amber-600 font-bold' },
                 { id: 'billing', label: 'Invoicing & Ledgers', icon: CreditCard },
-                { id: 'labs', label: 'Labs Workload Queue', badge: labOrders.filter(o => o.status === 'In Progress').length, icon: TrendingUp }
+                { id: 'labs', label: 'Labs Workload Queue', badge: labOrders.filter(o => o.status === 'In Progress').length, icon: TrendingUp },
+                { id: 'emergency_ot', label: 'ER & Operative Suites', icon: ShieldAlert },
+                { id: 'specialized_ops', label: 'Specialized Operations', icon: Heart },
+                { id: 'hospitality', label: 'Hospital Services', icon: Home }
               ].map(tab => {
                 const TabIcon = tab.icon;
                 const isSelected = activeSubTab === tab.id;
@@ -1285,6 +1288,316 @@ export default function BranchAdminPanel({
           </div>
         );
       })()}
+
+      {activeSubTab === 'emergency_ot' && (
+        <div className="space-y-6 animate-fade-in font-sans">
+          {/* Emergency, Triage and OT features */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            {/* Triage (P1 / P2 / P3) Management */}
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4 text-slate-800">
+              <div className="border-b border-slate-100 pb-2 flex justify-between items-center">
+                <h3 className="text-sm font-bold text-slate-800">Casualty & Emergency Triage Desk</h3>
+                <span className="text-[10px] bg-red-100 text-red-700 font-bold px-2 py-0.5 rounded font-mono uppercase">2 Critical Cases</span>
+              </div>
+              
+              <div className="space-y-2.5">
+                {[
+                  { name: 'Arjun Sharma', priority: 'P1 (Immediate Critical)', condition: 'Severe Head Injury - MVA', time: '5 mins ago', badge: 'bg-rose-105 text-rose-805 border-rose-250 font-bold animate-pulse' },
+                  { name: 'Meera Deshmukh', priority: 'P2 (Urgent)', condition: 'Acute Abdomen / Suspected Appendicitis', time: '14 mins ago', badge: 'bg-amber-100 text-amber-808 border-amber-250 font-semibold' },
+                  { name: 'Kushal Patil', priority: 'P3 (Non-Urgent / Stable)', condition: 'Lacerated Left Arm', time: '30 mins ago', badge: 'bg-slate-100 text-slate-705 border-slate-250 font-medium' }
+                ].map((tcase, idx) => (
+                  <div key={idx} className="p-3 bg-slate-50 border border-slate-200 rounded-lg flex justify-between items-center text-xs">
+                    <div>
+                      <strong className="text-slate-900 block font-bold">{tcase.name}</strong>
+                      <span className="text-[11px] text-slate-505 block mt-0.5">Presentation: <strong>{tcase.condition}</strong></span>
+                      <span className="text-[10px] text-slate-400 font-mono mt-0.5 block">Registered {tcase.time}</span>
+                    </div>
+                    <span className={`px-2 py-0.5 text-[9px] uppercase border rounded-md ${tcase.badge}`}>
+                      {tcase.priority}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Medico-Legal Cases MLC police logs */}
+              <div className="border-t border-slate-150 pt-4 space-y-2">
+                <h4 className="text-xs font-bold text-slate-500 uppercase font-mono">Medico-Legal Cases (MLC) Police Registry Log</h4>
+                <div className="p-3 bg-slate-950/5 text-slate-707 border border-slate-200 rounded-xl space-y-2 text-xs">
+                  <div className="flex justify-between font-mono text-[10px] text-slate-450 border-b border-slate-200 pb-1">
+                    <span>MLC Code: #ML-2026-081</span>
+                    <span className="text-emerald-600 font-bold">✔ Police Station Intimated</span>
+                  </div>
+                  <strong className="block text-slate-805">Patient: Sandeep Jadhav (Assault trauma case)</strong>
+                  <p className="text-[11px] text-slate-505 font-sans">Incident Type: Alleged physical battery at local venue. Attending IO: Offr. R. Thorat, Badge #449-DESK. Copy of Medico-Legal Certificate printed and filed.</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Operating Theatre (OT) Scheduling */}
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4 text-slate-800">
+              <div className="border-b border-slate-100 pb-2">
+                <h3 className="text-sm font-bold text-slate-800">Operating Theatre (OT) Schedules & Procedures</h3>
+              </div>
+              <div className="space-y-3">
+                {[
+                  { room: 'OT-01 Suite', surgeon: 'Dr. Vineet Roy', patient: 'Seema Rao (IPD-409)', procedure: 'Emergency Appendectomy', time: '12:30 PM - 01:45 PM', state: 'Occupied' },
+                  { room: 'OT-02 Suite', surgeon: 'Dr. Asha Deshpande', patient: 'Rahul Mehta (IPD-302)', procedure: 'Open Reduction Ortho Internal Fixation', time: '02:00 PM - 04:30 PM', state: 'Scheduled (Pre-Op)' }
+                ].map((ot, idx) => (
+                  <div key={idx} className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs space-y-1.5">
+                    <div className="flex justify-between items-center bg-slate-100 p-1.5 rounded">
+                      <strong className="font-mono text-indigo-700 text-[11px] font-bold">{ot.room}</strong>
+                      <span className={`px-2 py-0.2 text-[9px] font-bold rounded ${ot.state === 'Occupied' ? 'bg-rose-100 text-rose-805' : 'bg-blue-105 text-blue-805'}`}>{ot.state}</span>
+                    </div>
+                    <div className="text-slate-650 font-sans mt-0.5">
+                      <span className="block font-bold">Patient: <strong className="text-slate-800">{ot.patient}</strong></span>
+                      <span className="block">Assigned Specialist: <strong className="text-slate-805">{ot.surgeon}</strong></span>
+                      <span className="block">Procedure: <strong className="text-slate-707">{ot.procedure}</strong></span>
+                      <span className="block font-mono text-[10px] text-slate-500 mt-1">⏰ Interval: {ot.time}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* ICU NICU hourly vital checklist logs */}
+              <div className="border-t border-slate-150 pt-4 space-y-2">
+                <h4 className="text-xs font-bold text-slate-500 uppercase font-mono">ICU & NICU Command hourly vitals checklist and ventilators</h4>
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs space-y-2 font-sans">
+                  <div className="flex justify-between text-[11px] font-bold">
+                    <span>Patient: Master Kabir (NICU Unit 2B)</span>
+                    <span className="text-indigo-600">Bed: #04H</span>
+                  </div>
+                  <div className="grid grid-cols-4 gap-1 text-[10px] text-center font-mono">
+                    <div className="bg-white p-1 border border-slate-200 rounded">
+                      <span>HR</span>
+                      <strong className="block text-slate-850">142 bpm</strong>
+                    </div>
+                    <div className="bg-white p-1 border border-slate-200 rounded">
+                      <span>SPO2</span>
+                      <strong className="block text-emerald-650">99%</strong>
+                    </div>
+                    <div className="bg-white p-1 border border-slate-200 rounded">
+                      <span>Temp</span>
+                      <strong className="block text-slate-850">98.6°F</strong>
+                    </div>
+                    <div className="bg-white p-1 border border-slate-200 rounded">
+                      <span>Ventilator</span>
+                      <strong className="block text-indigo-600">SimV Mode</strong>
+                    </div>
+                  </div>
+                  <span className="block text-[10px] text-slate-450 italic font-medium leading-normal">Checked 18 mins ago by Nurse S. Shinde. Fluid input-output: IV infusion 20ml/hr normal saline mapped. Ready for handoff.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeSubTab === 'specialized_ops' && (
+        <div className="space-y-6 animate-fade-in font-sans">
+          {/* Specialized and high level operation units */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+            {/* Controlled substance narcotics registry log */}
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4 text-slate-800">
+              <div className="border-b border-slate-100 pb-2">
+                <h3 className="text-sm font-bold text-slate-800">Controlled Narcotics substance Registry Log</h3>
+              </div>
+              <p className="text-[11px] text-slate-505 font-sans">Compliant with FDA Schedules in hospital dispensing locks.</p>
+              
+              <div className="space-y-2">
+                {[
+                  { name: 'Morphine Sulphate 10mg/ml', lot: 'LOT-B22', stock: '24 Ampoules', status: 'Secured Lockbook' },
+                  { name: 'Fentanyl Ampoules 50mcg', lot: 'LOT-A19', stock: '12 Ampoules', status: 'Secured Lockbook' },
+                  { name: 'Ketamine HCl Vial 500mg', lot: 'LOT-K44', stock: '8 Vials', status: 'Double Witness Required' }
+                ].map((drug, id) => (
+                  <div key={id} className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs space-y-1">
+                    <div className="flex justify-between items-center font-semibold">
+                      <span className="text-slate-900 block font-bold">{drug.name}</span>
+                      <span className="bg-slate-200 font-mono text-[9px] px-1.5 py-0.2 rounded font-bold uppercase">{drug.lot}</span>
+                    </div>
+                    <div className="flex justify-between text-[11px] text-slate-505">
+                      <span>Locked Balance: <strong>{drug.stock}</strong></span>
+                      <span className="text-rose-650 font-semibold">{drug.status}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Blood Bank matching metrics */}
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4 text-slate-800">
+              <div className="border-b border-slate-100 pb-2">
+                <h3 className="text-sm font-bold text-slate-800">Blood Bank & Compatibility Donor Registry</h3>
+              </div>
+              <p className="text-[11px] text-slate-500 font-sans">Facility sharded stock balance index counts.</p>
+
+              <div className="grid grid-cols-3 gap-2 text-center text-xs font-mono font-bold">
+                {['O+ (8 Bags)', 'O- (2 Bags)', 'AB+ (4 Bags)', 'A+ (10 Bags)', 'B+ (6 Bags)', 'B- (3 Bags)'].map((group, id) => {
+                  const [grp, qty] = group.split(' ');
+                  return (
+                    <div key={id} className="p-2 border rounded-lg bg-red-50 border-red-200 text-red-800">
+                      <strong className="block text-sm">{grp}</strong>
+                      <span className="text-[9px] font-semibold">{qty.replace('(', '').replace(')', '')}</span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Donor records checklist */}
+              <div className="pt-3 border-t border-slate-100 text-xs text-slate-550 mt-1">
+                <span className="font-bold block text-slate-805">Incoming Blood Crossmatch Checklist:</span>
+                <p className="text-[11px] text-slate-500 font-sans mt-1">Cross-check code patient ID verification, gel agglutination testing validation, and dual-technician badge verification required before transfusion.</p>
+              </div>
+            </div>
+
+            {/* Mortuary & Death certificate registries */}
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4 text-slate-800">
+              <div className="border-b border-slate-100 pb-2">
+                <h3 className="text-sm font-bold text-slate-800">Mortuary & Death certificate register</h3>
+              </div>
+              
+              <div className="space-y-2.5 text-xs font-sans text-slate-707">
+                {[
+                  { name: 'Late Shripad Joshi', date: '2026-05-24', certificate: 'CERT-2026-092-D', status: 'Released (Body to Family)' },
+                  { name: 'Unknown Body (Trauma)', date: '2026-05-25', certificate: 'Pending Postmortem', status: 'Held in Freezing Node 03' }
+                ].map((mcase, idx) => (
+                  <div key={idx} className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+                    <strong className="font-semibold block text-slate-900">{mcase.name}</strong>
+                    <div className="flex justify-between text-[11px] mt-0.5">
+                      <span>Deceased: <strong>{mcase.date}</strong></span>
+                      <span>Code: <strong className="font-mono text-indigo-600">{mcase.certificate}</strong></span>
+                    </div>
+                    <span className="block text-[10px] text-slate-500 font-semibold mt-0.5">{mcase.status}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeSubTab === 'hospitality' && (
+        <div className="space-y-6 animate-fade-in font-sans">
+          {/* hospitality, assets, and waste management */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+            {/* Asset Maintenance Breakdowns AMC cycles */}
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4 text-slate-800">
+              <div className="border-b border-slate-100 pb-2">
+                <h3 className="text-sm font-bold text-slate-800">Asset & Biomechanical Equipment AMC Cycles</h3>
+              </div>
+              <div className="space-y-2 pt-1">
+                {[
+                  { name: 'MRI Core Scanner 3Tesla (Phillips)', status: 'Operational', calibration: 'AMC Certified Oct 2026', badge: 'bg-emerald-50 text-emerald-805 border-emerald-202' },
+                  { name: 'Patient Monitor Pulse-Ox (L&T)', status: 'Repair Needed (Core Alert)', calibration: 'AMC Overdue Since Jan', badge: 'bg-rose-50 text-rose-805 border-rose-220 animate-pulse' }
+                ].map((asset, id) => (
+                  <div key={id} className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs space-y-1">
+                    <strong className="font-bold text-slate-905 block">{asset.name}</strong>
+                    <div className="flex justify-between items-center text-[10px] pt-1">
+                      <span className={`px-2 py-0.2 border rounded ${asset.badge}`}>{asset.status}</span>
+                      <span className="text-slate-455 font-mono font-bold">{asset.calibration}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Housekeeping task details Canteen Meals scheduler */}
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4 text-slate-800">
+              <div className="border-b border-slate-100 pb-2">
+                <h3 className="text-sm font-bold text-slate-800">Dietary Canteen Schedules & Laundry</h3>
+              </div>
+              <div className="space-y-3.5 pt-1 text-xs text-slate-705">
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-1">
+                  <strong className="block text-slate-850">Daily IPD patients Canteen Diet Checklist</strong>
+                  <p className="text-[11px] text-slate-500 font-sans">Diet charts connected instantly to doctor orders. 14 patients assigned diabetic-modified meals; 2 pediatric patients aligned gluten-free.</p>
+                </div>
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-1">
+                  <strong className="block text-slate-850">Linen Laundry tracking logs</strong>
+                  <p className="text-[11px] text-slate-500 font-sans">Standard general ward bedding items count: <strong>42 Dispatched, 30 Sanitized Checked-in</strong>. Heavy ICU safety cycle complete.</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Biomedical Waste management yellow red blue category bag logs */}
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4 font-sans text-slate-850">
+              <div className="border-b border-slate-100 pb-2">
+                <h3 className="text-sm font-bold text-slate-800">Biomedical Waste tracking Bag logs</h3>
+              </div>
+              <p className="text-[11px] text-slate-505 font-sans">Compliant with State Pollution Board guidelines.</p>
+
+              <div className="space-y-2">
+                {[
+                  { tag: 'Yellow Bio-Hazard Bag', content: 'Anatomical Tissue / Lab Cultures', weight: '4.8 kg', style: 'bg-yellow-50 border-yellow-250 text-yellow-805' },
+                  { tag: 'Red Contaminated Plastic Bag', content: 'Catheters / Syringes / IV Tubing', weight: '6.2 kg', style: 'bg-red-50 border-red-250 text-red-805' },
+                  { tag: 'Blue Glass Sharp Container', content: 'Broken Vials / Needles / Ampoules', weight: '2.1 kg', style: 'bg-blue-50 border-blue-250 text-blue-805' }
+                ].map((bag, id) => (
+                  <div key={id} className={`p-2.5 border rounded-lg text-xs flex justify-between items-center ${bag.style}`}>
+                    <div>
+                      <strong className="block font-bold">{bag.tag}</strong>
+                      <span className="text-[10px] text-slate-550 font-sans block mt-0.5">{bag.content}</span>
+                    </div>
+                    <strong className="font-mono text-xs block font-extrabold">{bag.weight}</strong>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Visitor management gate pass registry */}
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4 text-slate-800">
+              <div className="border-b border-slate-100 pb-1">
+                <h3 className="text-sm font-bold text-slate-800">Visitor Pass Registry Gatekeeper Log</h3>
+              </div>
+              <div className="space-y-2">
+                {[
+                  { visitor: 'Prashant Joshi', patient: 'Mrs. S. Joshi (Bed 102)', code: 'PASS-811-Q', area: 'ICU Unit 1 Room (Limited 15m)', state: 'Active inside ward' },
+                  { visitor: 'Kiran Sen', patient: 'Vikram Sen (Bed 304)', code: 'PASS-221-A', area: 'General Ward 3D Block (OPD Hours)', state: 'Checked Out' }
+                ].map((v, i) => (
+                  <div key={i} className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-xs font-sans">
+                    <div>
+                      <strong className="text-slate-905 font-bold block">{v.visitor}</strong>
+                      <span className="text-[11px] text-slate-505 block mt-0.5">Assigned Target: <strong>{v.patient}</strong> • Restricted Zone: <strong className="text-slate-600">{v.area}</strong></span>
+                      <span className="text-[10px] font-mono text-indigo-605 block mt-0.5">Code: {v.code}</span>
+                    </div>
+                    <span className={`px-2 py-0.5 text-[9px] font-bold rounded-full border ${v.state === 'Checked Out' ? 'bg-slate-100 text-slate-600 border-slate-200' : 'bg-emerald-50 text-emerald-700 border-emerald-202'}`}>
+                      {v.state}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Queue system Token manager kiosk details */}
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4 text-slate-800 col-span-1">
+              <div className="border-b border-slate-100 pb-2">
+                <h3 className="text-sm font-bold text-slate-800">Queue Token self Check-In kiosk Board</h3>
+              </div>
+              <p className="text-[11px] text-slate-550 font-sans">Dynamic patient reception queues displaying estimated waiting periods.</p>
+
+              <div className="grid grid-cols-3 gap-2 text-center text-xs text-slate-805 font-mono">
+                <div className="p-2.5 bg-blue-50 border border-blue-200 rounded-xl">
+                  <span className="text-[10px] text-slate-500 uppercase font-sans font-bold block">Current Token</span>
+                  <strong className="text-lg block text-indigo-707 font-black pt-0.5">TK-402</strong>
+                  <span className="text-[9px] text-slate-455">Dr. Asha OPD</span>
+                </div>
+                <div className="p-2.5 bg-blue-50 border border-blue-200 rounded-xl">
+                  <span className="text-[10px] text-slate-500 uppercase font-sans font-bold block">Next Up</span>
+                  <strong className="text-lg block text-indigo-707 font-black pt-0.5">TK-403</strong>
+                  <span className="text-[9px] text-slate-455">Est Wait: 8 min</span>
+                </div>
+                <div className="p-2.5 bg-blue-50 border border-blue-200 rounded-xl">
+                  <span className="text-[10px] text-slate-500 uppercase font-sans font-bold block">Token Queue Load</span>
+                  <strong className="text-lg block text-indigo-707 font-black pt-0.5">14 Cases</strong>
+                  <span className="text-[9px] text-slate-455">Reception Desk A</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
         </div>
       </div>
 
@@ -1518,7 +1831,7 @@ export default function BranchAdminPanel({
                 <input
                   required
                   type="email"
-                  placeholder="e.g. cameron@gmail.com"
+                  placeholder="abc@gmail.com"
                   value={docEmail}
                   onChange={(e) => setDocEmail(e.target.value)}
                   className="w-full px-3 py-2 text-xs bg-white border border-slate-350 focus:border-blue-500 focus:outline-hidden rounded-lg font-sans"

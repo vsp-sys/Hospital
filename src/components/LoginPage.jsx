@@ -624,13 +624,7 @@ export default function LoginPage({
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder={
-                    selectedRole === 'super_admin' ? 'supmin20@gmail.com' :
-                    selectedRole === 'doctor' ? 'doctor@gmail.com' : 
-                    selectedRole === 'staff_admin' ? 'staffadmin@gmail.com' :
-                    selectedRole === 'staff' ? 'nurse@gmail.com' :
-                    selectedRole === 'branch_admin' ? 'branchops@gmail.com' : 'e.g. elena@gmail.com'
-                  }
+                  placeholder="abc@gmail.com"
                   className="w-full pl-9 pr-3 py-2 text-xs bg-white border border-slate-300 focus:outline-hidden focus:border-indigo-600 rounded-xl text-slate-900 font-medium"
                   id="login-email-input"
                 />
@@ -675,18 +669,7 @@ export default function LoginPage({
             </button>
           </form>
 
-          {/* TESTING DEFAULTS HELPER */}
-          {authMode === 'login' && (
-            <div className="p-3 bg-blue-550/5 border border-blue-100 rounded-xl text-[10px] text-slate-500 leading-normal font-sans">
-              💡 <strong>Developer Sandbox Credentials:</strong><br />
-              {selectedRole === 'super_admin' && <span>Email: <strong className="font-mono">supmin20@gmail.com</strong> | Pass: <strong className="font-mono">supmin@hms20</strong></span>}
-              {selectedRole === 'branch_admin' && <span>Email: <strong className="font-mono">branchops@gmail.com</strong> | Pass: <strong className="font-mono">branch123</strong></span>}
-              {selectedRole === 'doctor' && <span>Email: <strong className="font-mono">doctor@gmail.com</strong> | Pass: <strong className="font-mono">doctor123</strong></span>}
-              {selectedRole === 'staff' && <span>Email: <strong className="font-mono">nurse@gmail.com</strong> | Pass: <strong className="font-mono">nurse123</strong></span>}
-              {selectedRole === 'staff_admin' && <span>Email: <strong className="font-mono">staffadmin@gmail.com</strong> | Pass: <strong className="font-mono">staff123</strong></span>}
-              {selectedRole === 'patient' && <span>Enter a registered patient email and password. If you do not have an account, click <strong>&quot;Register&quot;</strong> in the switcher above!</span>}
-            </div>
-          )}
+
         </div>
       )}
     </div>

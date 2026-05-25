@@ -596,6 +596,7 @@ export default function PatientPortal({
                 { id: 'billing', label: 'Bills & Clearances', badge: myInvoices.filter(i => i.status !== 'Paid').length, icon: CreditCard },
                 { id: 'progress', label: 'Daily Vitals Telemetry', icon: TrendingUp },
                 { id: 'profile', label: 'Profile & Family', icon: Users },
+                { id: 'education', label: 'Education & Downloads Desk', icon: FileText },
                 { id: 'chat', label: 'Telereception Chat', icon: MessageSquare },
                 { id: 'broadcasts', label: 'Broadcast Alerts', badge: myNotifications.length, icon: Bell }
               ].map(item => {
@@ -1561,6 +1562,84 @@ export default function PatientPortal({
                 {myNotifications.length === 0 && (
                   <p className="text-xs text-slate-400 italic text-center py-10">No broadcast pager updates received on this clinic node.</p>
                 )}
+              </div>
+            </div>
+          )}
+
+          {activeSubTab === 'education' && (
+            <div className="space-y-6 animate-fade-in text-slate-800 font-sans">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                
+                {/* educational resource sheets download */}
+                <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4 text-slate-800">
+                  <div className="border-b border-slate-100 pb-2">
+                    <h3 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                      <Download className="w-4 h-4 text-emerald-600 animate-bounce" />
+                      Educational Pamphlets & Discharge Guidelines
+                    </h3>
+                  </div>
+                  <p className="text-xs text-slate-500 font-sans">Download pre-compiled physician handbooks specifically curated for your active prescriptions.</p>
+
+                  <div className="space-y-2.5">
+                    {[
+                      { title: 'Post-Op Wound Hygiene Handbook.pdf', size: '2.4 MB', type: 'Clinical Wound Care' },
+                      { title: 'Home Blood Pressure Monitoring Logbook.pdf', size: '1.1 MB', type: 'Self Care Instructions' },
+                      { title: 'Low-Sodium Diabetes Diet Guidelines.pdf', size: '3.8 MB', type: 'Specialized Nutrition Guides' }
+                    ].map((sheet, idx) => (
+                      <div key={idx} className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-xs">
+                        <div>
+                          <strong className="text-slate-850 block font-bold font-sans">{sheet.title}</strong>
+                          <span className="text-[10px] text-slate-400 font-mono italic">{sheet.type} | {sheet.size}</span>
+                        </div>
+                        <button
+                          onClick={() => alert(`Simulated starting secure download: ${sheet.title}`)}
+                          className="px-2.5 py-1 bg-slate-900 text-teal-400 font-mono font-bold text-[10px] rounded hover:bg-slate-800 cursor-pointer"
+                        >
+                          DOWNLOAD
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Patient self care symptom tracker logged entry */}
+                <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4 text-slate-800 font-sans">
+                  <div className="border-b border-slate-100 pb-2">
+                    <h3 className="text-sm font-bold text-slate-800">Specialist Symptom Tracker Self-Reporting</h3>
+                  </div>
+                  <p className="text-xs text-slate-500 font-sans leading-relaxed">Log your symptoms below to let the clinical ward staff review adjustments on your next follow-up appointment.</p>
+
+                  <div className="space-y-3 font-sans">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-[10px] uppercase font-mono font-bold text-slate-400 block mb-1 font-sans">Self-Reported Pain (0-10)</label>
+                        <select className="w-full text-xs p-2 bg-slate-50 border border-slate-300 rounded-lg">
+                          <option>0 - No discomfort</option>
+                          <option>2 - Tolerable mild pain</option>
+                          <option>4 - Moderate ache</option>
+                          <option>6 - Heavy pain</option>
+                          <option>8 - Extreme throbbing</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-[10px] uppercase font-mono font-bold text-slate-400 block mb-1 font-sans">Temperature (°F)</label>
+                        <input type="text" placeholder="98.6" className="w-full text-xs p-2 bg-slate-50 border border-slate-300 rounded-lg" />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] uppercase font-mono font-bold text-slate-400 block mb-1 font-sans">Adverse Reaction Symptom description</label>
+                      <textarea placeholder="e.g. Mild headache or slight dizziness observed after starting morning beta-blockers" className="w-full text-xs p-2 bg-slate-50 border border-slate-203 rounded-lg h-16"></textarea>
+                    </div>
+
+                    <button
+                      onClick={() => alert("Your custom daily selfcheck symptoms has been synced to clinical cloud dashboard safely.")}
+                      className="w-full py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-[11px] rounded-xl uppercase font-mono cursor-pointer"
+                    >
+                      SUBMIT DAILY SELF-LOGREPORT
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           )}

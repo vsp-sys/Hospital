@@ -157,6 +157,26 @@ export default function PatientPortal({
   const [payCardNum, setPayCardNum] = useState('');
   const [paySuccess, setPaySuccess] = useState(false);
 
+  // 14. Advanced HIPAA, GDPR & DPDP parameters
+  const [organDonationOpted, setOrganDonationOpted] = useState(false);
+  const [organSuccess, setOrganSuccess] = useState(false);
+  const [erasureStatus, setErasureStatus] = useState('Active Secure'); // 'Active Secure' | 'Erasure Requested' | 'In Progress'
+  const [erasureNotes, setErasureNotes] = useState('');
+  const [digitalConsentSigned, setDigitalConsentSigned] = useState(true);
+  const [ratingStars, setRatingStars] = useState(5);
+  const [feedbackComment, setFeedbackComment] = useState('');
+  const [hospitalFeedback, setHospitalFeedback] = useState([
+    { id: 1, doctorRating: 5, comment: 'Dr. Raymond Carter was extremely professional during my cardiology review.', date: '2026-05-20' },
+    { id: 2, doctorRating: 4, comment: 'Good nurse treatment in General Ward Rm 12', date: '2026-05-18' }
+  ]);
+  const [insuranceClaims, setInsuranceClaims] = useState([
+    { id: 1, insurer: 'Star Health Insurance Co.', policyNo: 'POL-883712-A', claimAmt: 2450, status: 'Reconciled & Claim Approved', aging: '2 days' },
+    { id: 2, insurer: 'Universal Care TPA Provider', policyNo: 'POL-104922-Q', claimAmt: 150, status: 'Pending Verification Check', aging: '1 day' }
+  ]);
+  const [newInsuranceName, setNewInsuranceName] = useState('');
+  const [newInsurancePolicy, setNewInsurancePolicy] = useState('');
+  const [newInsuranceClaimAmt, setNewInsuranceClaimAmt] = useState('');
+
   // Specialties list
   const specialties = ['ALL', 'Cardiology', 'Pediatrics', 'General Medicine', 'Neurology', 'Orthopedics', 'Dermatology'];
 

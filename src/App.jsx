@@ -41,6 +41,7 @@ import {
   addPatientSync,
   setBedTimerSync,
   updateBedStatusSync,
+  addBedSync,
   addInvoiceSync,
   reconcileInvoiceSync,
   logVitalsSync,
@@ -504,6 +505,25 @@ export default function App() {
     };
     setPatients(prev => [...prev, created]);
     appendAuditLog('Branch Admin', `Admitted Inpatient health case: ${created.name}`);
+  };
+
+  const handleAddBed = (newBed) => {
+    const created = {
+      id: `bed-${Date.now()}`,
+      branchId: activeBranchId || 'br-1',
+      timerDuration: null,
+      timerEndsAt: null,
+      patientId: null,
+      patientName: null,
+      ...newBed
+    };
+    addBedSync(created).then(() => {
+      setBeds(prev => {
+        if (prev.some(b => b.id === created.id)) return prev;
+        return [...prev, created];
+      });
+      appendAuditLog('Branch Admin', `Configured dynamic bed: ${created.bedNumber} in ${created.wardName}`);
+    });
   };
 
   // Background interval to check for bed release timer expiration
@@ -1217,6 +1237,7 @@ export default function App() {
               onDischargePatient={handleDischargePatient}
               onSetBedTimer={handleSetBedTimer}
               onExpireBedTimer={handleExpireBedTimer}
+              onAddBed={handleAddBed}
               hospitalName={activeHospitalName}
             />
           )}

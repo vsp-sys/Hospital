@@ -322,6 +322,21 @@ export async function updateBedStatusSync(bedId, status, patientId, patientName)
   }
 }
 
+export async function addBedSync(newBed) {
+  const path = 'beds';
+  try {
+    const createdId = newBed.id || `bed-${Date.now()}`;
+    const payload = {
+      ...newBed,
+      id: createdId
+    };
+    await setDoc(doc(db, path, createdId), payload);
+    return payload;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.CREATE, path);
+  }
+}
+
 export async function addInvoiceSync(newInv) {
   const path = 'invoices';
   try {

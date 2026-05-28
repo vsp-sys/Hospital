@@ -14,6 +14,10 @@ import branchAdminsRouter from './branchAdmins.js';
 import inventoryRouter from './inventory.js';
 import auditLogsRouter from './auditLogs.js';
 import notificationsRouter from './notifications.js';
+import licensesRouter from './licenses.js';
+import usersRouter from './users.js';
+import staffRouter from './staff.js';
+import staffAdminsRouter from './staffAdmins.js';
 
 const router = express.Router();
 
@@ -61,5 +65,17 @@ router.use('/auditLogs', auditLogsRouter);
 
 // Notifications CRUD
 router.use('/notifications', notificationsRouter);
+
+// Licenses CRUD
+router.use('/licenses', licensesRouter);
+
+// Users CRUD
+router.use('/users', usersRouter);
+
+// Staff CRUD
+router.use('/staff', staffRouter);
+
+// Staff Admins CRUD
+router.use('/staffAdmins', staffAdminsRouter);
 
 export default router;

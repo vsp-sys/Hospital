@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 
 const branchSchema = new mongoose.Schema({
-  hospitalId: { type: mongoose.Schema.Types.ObjectId, ref: 'Hospital', required: true },
+  hospitalId: { type: String, required: true },
   name: { type: String, required: true },
   city: { type: String, required: true },
   bedsTotal: { type: Number, default: 0 },

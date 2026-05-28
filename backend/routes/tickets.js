@@ -54,8 +54,8 @@ router.put('/:id', authenticateToken, async (req, res) => {
   }
 });
 
-// Resolve ticket (superadmin)
-router.patch('/:id/resolve', authenticateToken, authorizeRoles('superadmin'), async (req, res) => {
+// Resolve ticket (super_admin)
+router.patch('/:id/resolve', authenticateToken, authorizeRoles('super_admin'), async (req, res) => {
   try {
     const ticket = await Ticket.findByIdAndUpdate(
       req.params.id,
@@ -69,8 +69,8 @@ router.patch('/:id/resolve', authenticateToken, authorizeRoles('superadmin'), as
   }
 });
 
-// Delete ticket (superadmin only)
-router.delete('/:id', authenticateToken, authorizeRoles('superadmin'), async (req, res) => {
+// Delete ticket (super_admin only)
+router.delete('/:id', authenticateToken, authorizeRoles('super_admin'), async (req, res) => {
   try {
     const ticket = await Ticket.findByIdAndDelete(req.params.id);
     if (!ticket) return res.status(404).json({ message: 'Ticket not found' });

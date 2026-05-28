@@ -4,14 +4,14 @@ import { authenticateToken, authorizeRoles } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Get all patients (superadmin, branchadmin, staff, doctor)
-router.get('/', authenticateToken, authorizeRoles('superadmin', 'branchadmin', 'staff', 'doctor'), async (req, res) => {
+// Get all patients (super_admin, branch_admin, staff, doctor)
+router.get('/', authenticateToken, authorizeRoles('super_admin', 'branch_admin', 'staff', 'doctor'), async (req, res) => {
   const patients = await Patient.find();
   res.json(patients);
 });
 
-// Create patient (superadmin, branchadmin, staff)
-router.post('/', authenticateToken, authorizeRoles('superadmin', 'branchadmin', 'staff'), async (req, res) => {
+// Create patient (super_admin, branch_admin, staff)
+router.post('/', authenticateToken, authorizeRoles('super_admin', 'branch_admin', 'staff'), async (req, res) => {
   try {
     const patient = new Patient(req.body);
     await patient.save();
@@ -21,8 +21,8 @@ router.post('/', authenticateToken, authorizeRoles('superadmin', 'branchadmin', 
   }
 });
 
-// Update patient (superadmin, branchadmin, staff)
-router.put('/:id', authenticateToken, authorizeRoles('superadmin', 'branchadmin', 'staff'), async (req, res) => {
+// Update patient (super_admin, branch_admin, staff)
+router.put('/:id', authenticateToken, authorizeRoles('super_admin', 'branch_admin', 'staff'), async (req, res) => {
   try {
     const patient = await Patient.findByIdAndUpdate(req.params.id, req.body, { new: true });
     res.json(patient);
@@ -31,8 +31,8 @@ router.put('/:id', authenticateToken, authorizeRoles('superadmin', 'branchadmin'
   }
 });
 
-// Delete patient (superadmin only)
-router.delete('/:id', authenticateToken, authorizeRoles('superadmin'), async (req, res) => {
+// Delete patient (super_admin only)
+router.delete('/:id', authenticateToken, authorizeRoles('super_admin'), async (req, res) => {
   try {
     await Patient.findByIdAndDelete(req.params.id);
     res.json({ message: 'Patient deleted' });

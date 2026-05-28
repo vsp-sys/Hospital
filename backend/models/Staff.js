@@ -1,14 +1,12 @@
 import mongoose from 'mongoose';
 
-const doctorSchema = new mongoose.Schema({
+const staffSchema = new mongoose.Schema({
   branchId: { type: String, required: true },
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   name: { type: String, required: true },
-  specialty: { type: String },
-  rating: { type: Number, default: 0 },
+  position: { type: String },
   availability: { type: String, enum: ['On Duty', 'Off Duty', 'Emergency'], default: 'On Duty' },
-  contact: { type: String },
-  earnings: { type: Number, default: 0 }
+  contact: { type: String }
 });
 
-export default mongoose.model('Doctor', doctorSchema);
+export default mongoose.model('Staff', staffSchema);

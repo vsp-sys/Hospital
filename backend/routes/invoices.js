@@ -4,14 +4,14 @@ import { authenticateToken, authorizeRoles } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Get all invoices (superadmin, branchadmin, staff)
-router.get('/', authenticateToken, authorizeRoles('superadmin', 'branchadmin', 'staff'), async (req, res) => {
+// Get all invoices (super_admin, branch_admin, staff)
+router.get('/', authenticateToken, authorizeRoles('super_admin', 'branch_admin', 'staff'), async (req, res) => {
   const invoices = await Invoice.find();
   res.json(invoices);
 });
 
-// Create invoice (superadmin, branchadmin, staff)
-router.post('/', authenticateToken, authorizeRoles('superadmin', 'branchadmin', 'staff'), async (req, res) => {
+// Create invoice (super_admin, branch_admin, staff)
+router.post('/', authenticateToken, authorizeRoles('super_admin', 'branch_admin', 'staff'), async (req, res) => {
   try {
     const invoice = new Invoice(req.body);
     await invoice.save();
@@ -21,8 +21,8 @@ router.post('/', authenticateToken, authorizeRoles('superadmin', 'branchadmin', 
   }
 });
 
-// Update invoice (superadmin, branchadmin, staff)
-router.put('/:id', authenticateToken, authorizeRoles('superadmin', 'branchadmin', 'staff'), async (req, res) => {
+// Update invoice (super_admin, branch_admin, staff)
+router.put('/:id', authenticateToken, authorizeRoles('super_admin', 'branch_admin', 'staff'), async (req, res) => {
   try {
     const invoice = await Invoice.findByIdAndUpdate(req.params.id, req.body, { new: true });
     res.json(invoice);
@@ -31,8 +31,8 @@ router.put('/:id', authenticateToken, authorizeRoles('superadmin', 'branchadmin'
   }
 });
 
-// Delete invoice (superadmin only)
-router.delete('/:id', authenticateToken, authorizeRoles('superadmin'), async (req, res) => {
+// Delete invoice (super_admin only)
+router.delete('/:id', authenticateToken, authorizeRoles('super_admin'), async (req, res) => {
   try {
     await Invoice.findByIdAndDelete(req.params.id);
     res.json({ message: 'Invoice deleted' });

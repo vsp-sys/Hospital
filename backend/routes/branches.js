@@ -4,14 +4,14 @@ import { authenticateToken, authorizeRoles } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Get all branches (superadmin, branchadmin)
-router.get('/', authenticateToken, authorizeRoles('superadmin', 'branchadmin'), async (req, res) => {
+// Get all branches (super_admin, branch_admin)
+router.get('/', authenticateToken, authorizeRoles('super_admin', 'branch_admin'), async (req, res) => {
   const branches = await Branch.find();
   res.json(branches);
 });
 
-// Create branch (superadmin, branchadmin)
-router.post('/', authenticateToken, authorizeRoles('superadmin', 'branchadmin'), async (req, res) => {
+// Create branch (super_admin, branch_admin)
+router.post('/', authenticateToken, authorizeRoles('super_admin', 'branch_admin'), async (req, res) => {
   try {
     const branch = new Branch(req.body);
     await branch.save();
@@ -21,8 +21,8 @@ router.post('/', authenticateToken, authorizeRoles('superadmin', 'branchadmin'),
   }
 });
 
-// Update branch (superadmin, branchadmin)
-router.put('/:id', authenticateToken, authorizeRoles('superadmin', 'branchadmin'), async (req, res) => {
+// Update branch (super_admin, branch_admin)
+router.put('/:id', authenticateToken, authorizeRoles('super_admin', 'branch_admin'), async (req, res) => {
   try {
     const branch = await Branch.findByIdAndUpdate(req.params.id, req.body, { new: true });
     res.json(branch);
@@ -31,8 +31,8 @@ router.put('/:id', authenticateToken, authorizeRoles('superadmin', 'branchadmin'
   }
 });
 
-// Delete branch (superadmin only)
-router.delete('/:id', authenticateToken, authorizeRoles('superadmin'), async (req, res) => {
+// Delete branch (super_admin only)
+router.delete('/:id', authenticateToken, authorizeRoles('super_admin'), async (req, res) => {
   try {
     await Branch.findByIdAndDelete(req.params.id);
     res.json({ message: 'Branch deleted' });

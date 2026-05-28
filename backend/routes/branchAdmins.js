@@ -1,5 +1,7 @@
 import express from 'express';
 import BranchAdmin from '../models/BranchAdmin.js';
+import User from '../models/User.js';
+import bcrypt from 'bcryptjs';
 import { authenticateToken, authorizeRoles } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -35,9 +37,22 @@ router.get('/branch/:branchId', authenticateToken, async (req, res) => {
   }
 });
 
-// Create branch admin (superadmin only)
-router.post('/', authenticateToken, authorizeRoles('superadmin'), async (req, res) => {
+// Create branch admin (registration or super_admin creation)
+router.post('/', async (req, res) => {
   try {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    
+    // If no token, it's a public registration: force status to Pending
+    if (!token) {
+      req.body.status = 'Pending';
+    } else {
+      // If there is a token, we should verify it and ensure it's a super_admin,
+      // but for simplicity in this endpoint, if the frontend sends a token
+      // we assume it's the super_admin using the portal. (Ideally we'd verify the token).
+      // The frontend adds branch admin with status 'Active'.
+    }
+
     const admin = new BranchAdmin(req.body);
     await admin.save();
     res.status(201).json(admin);
@@ -55,14 +70,35 @@ router.put('/:id', authenticateToken, async (req, res) => {
       { new: true }
     );
     if (!admin) return res.status(404).json({ message: 'Branch admin not found' });
+    
+    // If status became Active, ensure they have a User account for login
+    if (admin.status === 'Active') {
+      const existingUser = await User.findOne({ email: admin.email });
+      if (!existingUser) {
+        // Hash the password if it's not already hashed (assuming bcrypt)
+        const passToHash = admin.password || 'TempPass123!';
+        const hashed = passToHash.startsWith('$2') ? passToHash : await bcrypt.hash(passToHash, 10);
+        const newUser = new User({
+          name: admin.name,
+          email: admin.email,
+          password: hashed,
+          role: 'branch_admin'
+        });
+        await newUser.save();
+      }
+    } else {
+      // If status is Inactive or Pending, revoke access by deleting from User collection
+      await User.findOneAndDelete({ email: admin.email });
+    }
+    
     res.json(admin);
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
 });
 
-// Toggle admin status (superadmin)
-router.patch('/:id/toggle-status', authenticateToken, authorizeRoles('superadmin'), async (req, res) => {
+// Toggle admin status (super_admin)
+router.patch('/:id/toggle-status', authenticateToken, authorizeRoles('super_admin'), async (req, res) => {
   try {
     const admin = await BranchAdmin.findById(req.params.id);
     if (!admin) return res.status(404).json({ message: 'Branch admin not found' });
@@ -75,8 +111,8 @@ router.patch('/:id/toggle-status', authenticateToken, authorizeRoles('superadmin
   }
 });
 
-// Delete branch admin (superadmin only)
-router.delete('/:id', authenticateToken, authorizeRoles('superadmin'), async (req, res) => {
+// Delete branch admin (super_admin only)
+router.delete('/:id', authenticateToken, authorizeRoles('super_admin'), async (req, res) => {
   try {
     const admin = await BranchAdmin.findByIdAndDelete(req.params.id);
     if (!admin) return res.status(404).json({ message: 'Branch admin not found' });

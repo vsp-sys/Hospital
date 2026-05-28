@@ -49,8 +49,8 @@ router.put('/:id', authenticateToken, authorizeRoles('doctor', 'staff'), async (
   }
 });
 
-// Delete fluid record (superadmin)
-router.delete('/:id', authenticateToken, authorizeRoles('superadmin'), async (req, res) => {
+// Delete fluid record (super_admin)
+router.delete('/:id', authenticateToken, authorizeRoles('super_admin'), async (req, res) => {
   try {
     const fluidRecord = await FluidRecord.findByIdAndDelete(req.params.id);
     if (!fluidRecord) return res.status(404).json({ message: 'Fluid record not found' });

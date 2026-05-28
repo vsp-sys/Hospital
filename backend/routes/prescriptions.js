@@ -4,8 +4,8 @@ import { authenticateToken, authorizeRoles } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Get all prescriptions (superadmin, branchadmin, doctor, staff)
-router.get('/', authenticateToken, authorizeRoles('superadmin', 'branchadmin', 'doctor', 'staff'), async (req, res) => {
+// Get all prescriptions (super_admin, branch_admin, doctor, staff)
+router.get('/', authenticateToken, authorizeRoles('super_admin', 'branch_admin', 'doctor', 'staff'), async (req, res) => {
   const prescriptions = await Prescription.find();
   res.json(prescriptions);
 });
@@ -31,8 +31,8 @@ router.put('/:id', authenticateToken, authorizeRoles('doctor'), async (req, res)
   }
 });
 
-// Delete prescription (superadmin only)
-router.delete('/:id', authenticateToken, authorizeRoles('superadmin'), async (req, res) => {
+// Delete prescription (super_admin only)
+router.delete('/:id', authenticateToken, authorizeRoles('super_admin'), async (req, res) => {
   try {
     await Prescription.findByIdAndDelete(req.params.id);
     res.json({ message: 'Prescription deleted' });

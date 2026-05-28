@@ -1,11 +1,11 @@
 import mongoose from 'mongoose';
 
 const bedSchema = new mongoose.Schema({
-  branchId: { type: mongoose.Schema.Types.ObjectId, ref: 'Branch', required: true },
+  branchId: { type: String, required: true },
   wardName: { type: String },
   bedNumber: { type: String },
   status: { type: String, enum: ['Occupied', 'Sanitation', 'Available'], default: 'Available' },
-  patientId: { type: mongoose.Schema.Types.ObjectId, ref: 'Patient' },
+  patientId: { type: String },
   patientName: { type: String }
 });
 

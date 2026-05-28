@@ -25,6 +25,8 @@ export default function BranchAdminPanel({
   branch,
   beds,
   doctors,
+  staffMembers = [],
+  staffAdmins = [],
   patients,
   invoices,
   labOrders,
@@ -71,29 +73,7 @@ export default function BranchAdminPanel({
     ]);
   }, [invoices]);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setLiveBedsData(prev => {
-        if (prev.length === 0) return prev;
-        return prev.map(item => {
-          let jitter = Math.floor((Math.random() - 0.5) * 3);
-          let newVal = Math.max(item.value + jitter, 1);
-          return { ...item, value: newVal };
-        });
-      });
-
-      setLiveInvoicesData(prev => {
-        if (prev.length === 0) return prev;
-        return prev.map(item => {
-          let jitter = (Math.random() > 0.6) ? 1 : 0;
-          let newVal = Math.max(item.value + jitter, 1);
-          return { ...item, value: newVal };
-        });
-      });
-    }, 4000);
-
-    return () => clearInterval(interval);
-  }, []);
+  // Removed random jitter effect for liveBedsData and liveInvoicesData. Charts now reflect only MongoDB data.
 
   // Filter States
   const [bedsFilterStatus, setBedsFilterStatus] = useState('All');
@@ -227,16 +207,16 @@ export default function BranchAdminPanel({
   const handleDocSubmit = (e) => {
     e.preventDefault();
     if (!docName || !docContact || !docEmail || !docPassword) return;
+    const branchId = branch?._id || branch?.id || '';
     onAddDoctor({
-      branchId: branch.id,
+      branchId,
       name: docName,
+      email: docEmail,
+      password: docPassword,
+      role: docProfession,
       specialty: docProfession === 'doctor' ? docSpecialty : (docProfession === 'nurse' ? 'Nursing Care' : 'Administrative Support'),
       contact: docContact,
-      phone: docContact,
-      availability: docAvailability,
-      profession: docProfession,
-      email: docEmail.trim().toLowerCase(),
-      password: docPassword
+      availability: docAvailability
     });
     setDocName('');
     setDocContact('');
@@ -352,7 +332,7 @@ export default function BranchAdminPanel({
           <div className="mt-2 text-2xl font-bold text-slate-900">
             {doctors.filter(d => d.availability === 'On Duty' || d.availability === 'Emergency').length}
           </div>
-          <p className="text-[10px] text-emerald-600 font-semibold mt-1">Staff roster optimized</p>
+          <p className="text-[10px] text-emerald-600 font-semibold mt-1">{staffMembers.length} nurses • {staffAdmins.length} admin</p>
         </div>
 
         <div className="p-4 bg-white border border-slate-200 rounded-xl shadow-xs">
@@ -808,13 +788,18 @@ export default function BranchAdminPanel({
             );
           })()}
        {activeSubTab === 'staff' && (() => {
-        const docSpecialties = Array.from(new Set(doctors.map(d => d.specialty)));
+        // Combine doctors, staff members, and staff admins
+        const allStaff = [
+          ...doctors.map(d => ({ ...d, type: 'doctor', specialty: d.specialty || 'Doctor' })),
+          ...staffMembers.map(s => ({ ...s, type: 'nurse', specialty: s.position || 'Clinical Staff' })),
+          ...staffAdmins.map(a => ({ ...a, type: 'admin', specialty: a.title || 'Administrator' }))
+        ];
         
-        const filteredDocs = doctors.filter(doc => {
-          const matchesText = doc.name.toLowerCase().includes(staffDocFilterText.toLowerCase()) || 
-                             doc.specialty.toLowerCase().includes(staffDocFilterText.toLowerCase());
-          const matchesSpecialty = staffDocFilterSpecialty === 'All' || doc.specialty === staffDocFilterSpecialty;
-          return matchesText && matchesSpecialty;
+        const filteredDocs = allStaff.filter(staff => {
+          const matchesText = staff.name.toLowerCase().includes(staffDocFilterText.toLowerCase()) || 
+                             (staff.specialty && staff.specialty.toLowerCase().includes(staffDocFilterText.toLowerCase()));
+          const matchesType = staffDocFilterSpecialty === 'All' || staff.type === staffDocFilterSpecialty;
+          return matchesText && matchesType;
         });
 
         const filteredPats = patients.filter(pat => {
@@ -829,12 +814,12 @@ export default function BranchAdminPanel({
             {/* Medical practitioners */}
             <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs">
               <div className="p-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-800 uppercase tracking-widest">Enrolled Branch Doctors</span>
+                <span className="text-xs font-bold text-slate-800 uppercase tracking-widest">Clinical Staff Roster</span>
                 <button 
                   onClick={() => setShowDocModal(true)}
                   className="px-2.5 py-1 text-xs text-white bg-slate-900 font-medium rounded-lg cursor-pointer hover:bg-slate-800"
                 >
-                  + Register New Dr
+                  + Add Staff
                 </button>
               </div>
 
@@ -844,7 +829,7 @@ export default function BranchAdminPanel({
                   <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2 top-2.5" />
                   <input
                     type="text"
-                    placeholder="Search doctor..."
+                    placeholder="Search by name/role..."
                     value={staffDocFilterText}
                     onChange={(e) => setStaffDocFilterText(e.target.value)}
                     className="w-full pl-7 pr-3 py-1.5 text-xs bg-white border border-slate-300 rounded-lg focus:outline-none"
@@ -855,10 +840,10 @@ export default function BranchAdminPanel({
                   onChange={(e) => setStaffDocFilterSpecialty(e.target.value)}
                   className="w-full sm:w-1/2 px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold focus:outline-none"
                 >
-                  <option value="All">All Specialties</option>
-                  {docSpecialties.map(spec => (
-                    <option key={spec} value={spec}>{spec}</option>
-                  ))}
+                  <option value="All">All Types</option>
+                  <option value="doctor">Doctors</option>
+                  <option value="nurse">Nurses/Staff</option>
+                  <option value="admin">Admin</option>
                 </select>
                 {(staffDocFilterText !== '' || staffDocFilterSpecialty !== 'All') && (
                   <button
@@ -872,40 +857,36 @@ export default function BranchAdminPanel({
               </div>
 
               <div className="divide-y divide-slate-100">
-                {filteredDocs.map(doc => (
-                  <div key={doc.id} className="p-4 flex items-center justify-between hover:bg-slate-50">
-                    <div>
+                {filteredDocs.length === 0 ? (
+                  <div className="p-6 text-center text-slate-500">
+                    <p className="text-xs">No staff matches the query.</p>
+                  </div>
+                ) : filteredDocs.map(staff => (
+                  <div key={staff._id || staff.id} className="p-4 flex items-center justify-between hover:bg-slate-50">
+                    <div className="flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="font-semibold text-slate-850">{doc.name}</h3>
-                        {doc.profession && (
-                          <span className={`text-[9px] px-1.5 py-0.5 font-bold uppercase rounded-md ${
-                            doc.profession === 'doctor' ? 'bg-blue-50 text-blue-600 border border-blue-100' :
-                            doc.profession === 'nurse' ? 'bg-indigo-50 text-indigo-600 border border-indigo-100' :
-                            'bg-amber-50 text-amber-700 border border-amber-100'
-                          }`}>
-                            {doc.profession}
-                          </span>
-                        )}
+                        <h3 className="font-semibold text-slate-850">{staff.name}</h3>
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
+                          staff.type === 'doctor' ? 'bg-blue-100 text-blue-700' :
+                          staff.type === 'nurse' ? 'bg-green-100 text-green-700' :
+                          'bg-purple-100 text-purple-700'
+                        }`}>
+                          {staff.type === 'doctor' ? 'MD' : staff.type === 'nurse' ? 'RN' : 'ADM'}
+                        </span>
                       </div>
-                      <p className="text-xs text-slate-500">{doc.specialty} • {doc.contact}</p>
+                      <p className="text-xs text-slate-500 mt-1">{staff.specialty} • {staff.contact || 'N/A'}</p>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${
-                        doc.availability === 'On Duty' ? 'bg-emerald-100 text-emerald-800' :
-                        doc.availability === 'Emergency' ? 'bg-rose-100 text-rose-800' :
+                    <div className="text-right">
+                      <span className={`inline-block px-2 py-0.5 text-xs font-semibold rounded-full ${
+                        staff.availability === 'On Duty' || staff.availability === 'Emergency' ? 'bg-emerald-100 text-emerald-800' :
                         'bg-slate-100 text-slate-650'
                       }`}>
-                        {doc.availability}
+                        {staff.availability || 'On Duty'}
                       </span>
-                      <span className="text-xs font-bold text-slate-600">★ {doc.rating.toFixed(1)}</span>
+                      {staff.rating && <div className="text-xs font-bold text-slate-600 mt-1">★ {staff.rating.toFixed(1)}</div>}
                     </div>
                   </div>
                 ))}
-                {filteredDocs.length === 0 && (
-                  <div className="text-center py-8 text-slate-400 text-xs">
-                    No doctor matches the query.
-                  </div>
-                )}
               </div>
             </div>
 
@@ -2047,8 +2028,8 @@ export default function BranchAdminPanel({
                     className="w-full text-xs p-2.5 bg-white border border-slate-350 focus:border-blue-500 focus:outline-hidden rounded-lg font-medium"
                   >
                     <option value="doctor">Doctor</option>
-                    <option value="nurse">Nurse</option>
-                    <option value="staff">Staff</option>
+                    <option value="staff">Nurse</option>
+                    <option value="staff_admin">Staff</option>
                   </select>
                 </div>
                 <div>

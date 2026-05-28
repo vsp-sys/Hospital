@@ -52,6 +52,8 @@ export default function App() {
   const [branches, setBranches] = useState(initialBranches);
   const [beds, setBeds] = useState(initialBeds);
   const [doctors, setDoctors] = useState(initialDoctors);
+  const [staffMembers, setStaffMembers] = useState([]);
+  const [staffAdmins, setStaffAdmins] = useState([]);
   const [patients, setPatients] = useState(initialPatients);
   const [appointments, setAppointments] = useState(initialAppointments);
   const [prescriptions, setPrescriptions] = useState(initialPrescriptions);
@@ -155,7 +157,7 @@ export default function App() {
 
     async function loadData() {
       try {
-        const [hospRes, branchRes, bedRes, docRes, patRes, apptRes, prescRes, invRes, ticketRes, fluidsRes, handoffsRes, branchAdminsRes, inventoryRes, auditLogsRes, notificationsRes] = await Promise.all([
+        const [hospRes, branchRes, bedRes, docRes, patRes, apptRes, prescRes, invRes, ticketRes, fluidsRes, handoffsRes, branchAdminsRes, inventoryRes, auditLogsRes, notificationsRes, usersRes, staffRes, staffAdminsRes] = await Promise.all([
           api.get('/hospitals'),
           api.get('/branches'),
           api.get('/beds'),
@@ -171,6 +173,9 @@ export default function App() {
           api.get('/inventory'),
           api.get('/auditLogs'),
           api.get('/notifications'),
+          api.get('/users'),
+          api.get('/staff'),
+          api.get('/staffAdmins'),
         ]);
         setHospitals(hospRes.data);
         setBranches(branchRes.data);
@@ -183,10 +188,39 @@ export default function App() {
         setTickets(ticketRes.data);
         setFluids(fluidsRes.data);
         setHandoffs(handoffsRes.data);
-        setBranchAdmins(branchAdminsRes.data);
+        setBranchAdmins(branchAdminsRes.data.map(a => ({ ...a, id: a._id || a.id })));
         setInventoryItems(inventoryRes.data);
         setAuditLogs(auditLogsRes.data);
         setNotifications(notificationsRes.data);
+        // Staff / users
+        setStaffMembers(staffRes.data || []);
+        setStaffAdmins(staffAdminsRes.data || []);
+
+        // Merge any user-only doctors into doctors list (fallback)
+        try {
+          const userDocs = usersRes.data || [];
+          const extraDoctors = userDocs.filter(u => u.role === 'doctor').map(u => ({
+            _id: u._id || u.id,
+            userId: u._id || u.id,
+            name: u.name,
+            specialty: u.specialty || '',
+            contact: u.contact || u.email,
+            availability: 'On Duty',
+            branchId: (branchRes.data && branchRes.data[0] && (branchRes.data[0]._id || branchRes.data[0].id)) || 'br-1'
+          }));
+          // Combine and dedupe by _id/email
+          const combined = [...docRes.data, ...extraDoctors];
+          const seen = new Set();
+          const deduped = combined.filter(d => {
+            const key = d._id || d.email || d.userId || d.name;
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          });
+          setDoctors(deduped);
+        } catch (e) {
+          setDoctors(docRes.data || []);
+        }
         setLicenses(initialLicenses);
       } catch (err) {
         console.warn('Failed to fetch data:', err.message);
@@ -285,6 +319,225 @@ export default function App() {
     setLoggedInRole(null);
   };
 
+  // SYNC FUNCTIONS - API wrappers for database operations
+  const addHospitalSync = async (hospital) => {
+    try {
+      const res = await api.post('/hospitals', hospital);
+      setHospitals(prev => [...prev, res.data]);
+      return res.data;
+    } catch (err) {
+      console.error('Failed to add hospital:', err.message);
+      return null;
+    }
+  };
+
+  const toggleHospitalStateSync = async (hospId, currentState) => {
+    try {
+      const newState = !currentState;
+      const res = await api.put(`/hospitals/${hospId}`, { isActive: newState });
+      setHospitals(prev => prev.map(h => h.id === hospId ? res.data : h));
+      return res.data;
+    } catch (err) {
+      console.error('Failed to toggle hospital state:', err.message);
+    }
+  };
+
+  const addBranchSync = async (branch) => {
+    try {
+      const res = await api.post('/branches', branch);
+      setBranches(prev => [...prev, res.data]);
+      return res.data;
+    } catch (err) {
+      console.error('Failed to add branch:', err.message);
+      return null;
+    }
+  };
+
+  const addBranchAdminSync = async (admin) => {
+    try {
+      const res = await api.post('/branchAdmins', admin);
+      const data = { ...res.data, id: res.data._id || res.data.id };
+      setBranchAdmins(prev => [...prev, data]);
+      return data;
+    } catch (err) {
+      console.error('Failed to add branch admin:', err.message);
+      return null;
+    }
+  };
+
+  const addNotificationSync = async (notif) => {
+    try {
+      const res = await api.post('/notifications', notif);
+      setNotifications(prev => [...prev, res.data]);
+      return res.data;
+    } catch (err) {
+      console.error('Failed to add notification:', err.message);
+      return null;
+    }
+  };
+
+  const deleteNotificationSync = async (notifId) => {
+    try {
+      await api.delete(`/notifications/${notifId}`);
+      setNotifications(prev => prev.filter(n => n.id !== notifId));
+      return true;
+    } catch (err) {
+      console.error('Failed to delete notification:', err.message);
+      return false;
+    }
+  };
+
+  const toggleBranchAdminStatusSync = async (adminId, currentStatus) => {
+    try {
+      const newStatus = currentStatus === 'Active' ? 'Inactive' : 'Active';
+      const res = await api.put(`/branchAdmins/${adminId}`, { status: newStatus });
+      const data = { ...res.data, id: res.data._id || res.data.id };
+      setBranchAdmins(prev => prev.map(a => a.id === adminId ? data : a));
+      return data;
+    } catch (err) {
+      console.error('Failed to toggle admin status:', err.message);
+    }
+  };
+
+  const deleteBranchAdminSync = async (adminId) => {
+    try {
+      await api.delete(`/branchAdmins/${adminId}`);
+      setBranchAdmins(prev => prev.filter(a => a.id !== adminId));
+      return true;
+    } catch (err) {
+      console.error('Failed to delete branch admin:', err.message);
+    }
+  };
+
+  const addPatientSync = async (patient) => {
+    try {
+      const res = await api.post('/patients', patient);
+      setPatients(prev => [...prev, res.data]);
+      return res.data;
+    } catch (err) {
+      console.error('Failed to add patient:', err.message);
+      return null;
+    }
+  };
+
+  const dischargePatientSync = async (patientId) => {
+    try {
+      const res = await api.put(`/patients/${patientId}`, { status: 'Discharged' });
+      setPatients(prev => prev.map(p => p.id === patientId ? res.data : p));
+      return res.data;
+    } catch (err) {
+      console.error('Failed to discharge patient:', err.message);
+    }
+  };
+
+  const updateBedStatusSync = async (bedId, status, patientId, patientName) => {
+    try {
+      const res = await api.put(`/beds/${bedId}`, { status, patientId, patientName });
+      setBeds(prev => prev.map(b => b.id === bedId ? res.data : b));
+      return res.data;
+    } catch (err) {
+      console.error('Failed to update bed status:', err.message);
+    }
+  };
+
+  const setBedTimerSync = async (bedId, duration, endsAt) => {
+    try {
+      const res = await api.put(`/beds/${bedId}`, { timerDuration: duration, timerEndsAt: endsAt });
+      setBeds(prev => prev.map(b => b.id === bedId ? res.data : b));
+      return res.data;
+    } catch (err) {
+      console.error('Failed to set bed timer:', err.message);
+    }
+  };
+
+  const addBedSync = async (bed) => {
+    try {
+      const res = await api.post('/beds', bed);
+      setBeds(prev => [...prev, res.data]);
+      return res.data;
+    } catch (err) {
+      console.error('Failed to add bed:', err.message);
+      return null;
+    }
+  };
+
+  const resolveTicketSync = async (ticketId) => {
+    try {
+      const res = await api.put(`/tickets/${ticketId}`, { status: 'Resolved' });
+      setTickets(prev => prev.map(t => t.id === ticketId ? res.data : t));
+      return res.data;
+    } catch (err) {
+      console.error('Failed to resolve ticket:', err.message);
+    }
+  };
+
+  const wipeAllCollectionsSync = async () => {
+    try {
+      await api.post('/wipeAll');
+      setHospitals([]);
+      setBranches([]);
+      setBeds([]);
+      setDoctors([]);
+      setPatients([]);
+      setAppointments([]);
+      setPrescriptions([]);
+      setInvoices([]);
+      setLabOrders([]);
+      setTickets([]);
+      setFluids([]);
+      setHandoffs([]);
+      setEmergencyAlert(null);
+      setAuditLogs([]);
+      setBranchAdmins([]);
+      setInventoryItems([]);
+      setNotifications([]);
+      return true;
+    } catch (err) {
+      console.error('Failed to wipe collections:', err.message);
+    }
+  };
+
+  const restockMedicineSync = async (itemId, currentQty, amount) => {
+    try {
+      const res = await api.put(`/inventory/${itemId}`, { quantity: currentQty + amount });
+      setInventoryItems(prev => prev.map(i => i.id === itemId ? res.data : i));
+      return res.data;
+    } catch (err) {
+      console.error('Failed to restock medicine:', err.message);
+    }
+  };
+
+  const dispensePharmacySync = async (itemId, currentQty, amount) => {
+    try {
+      const res = await api.put(`/inventory/${itemId}`, { quantity: Math.max(0, currentQty - amount) });
+      setInventoryItems(prev => prev.map(i => i.id === itemId ? res.data : i));
+      return res.data;
+    } catch (err) {
+      console.error('Failed to dispense medicine:', err.message);
+    }
+  };
+
+  const updateLabStatusSync = async (labId, status, result) => {
+    try {
+      const res = await api.put(`/laborders/${labId}`, { status, result });
+      setLabOrders(prev => prev.map(l => l.id === labId ? res.data : l));
+      return res.data;
+    } catch (err) {
+      console.error('Failed to update lab status:', err.message);
+    }
+  };
+
+  const addDoctorSync = async (doctor) => {
+    try {
+      const res = await api.post('/doctors', doctor);
+      setDoctors(prev => [...prev, res.data]);
+      return res.data;
+    } catch (err) {
+      console.error('Failed to add doctor:', err.response?.data || err.message);
+      return null;
+    }
+  };
+
   // 1. SUPER ADMIN PIPELINES
   const handleAddHospital = (newHosp) => {
     addHospitalSync(newHosp).then((created) => {
@@ -324,6 +577,19 @@ export default function App() {
   const handleGlobalBroadcast = (message) => {
     setGlobalBroadcast(`📢 Live System broadcast: ${message}`);
     appendAuditLog('Super Admin', `Dispatched multi-tenant pager notification: "${message}"`);
+    
+    // Create a real notification so it pops up in the alert box
+    const notif = {
+      title: 'Global Broadcast',
+      message: message,
+      targetRole: 'all',
+      urgency: 'Urgent',
+      senderName: 'System Administrator',
+      senderRole: 'Super Admin',
+      timestamp: new Date().toISOString(),
+      read: false
+    };
+    addNotificationSync(notif);
   };
 
   const handleSystemBackup = () => {
@@ -371,10 +637,12 @@ export default function App() {
   const handleToggleBranchAdminStatus = (adminId) => {
     const target = branchAdmins.find(adm => adm.id === adminId);
     if (target) {
-      toggleBranchAdminStatusSync(adminId, target.status).then(() => {
-        const nextStatus = target.status === 'Active' ? 'Inactive' : 'Active';
-        setBranchAdmins(prev => prev.map(adm => adm.id === adminId ? { ...adm, status: nextStatus } : adm));
-        appendAuditLog('Super Admin', `Toggled Admin Status of ${target.name} to ${nextStatus.toUpperCase()}`);
+      toggleBranchAdminStatusSync(adminId, target.status).then((updated) => {
+        if (updated) {
+          const nextStatus = target.status === 'Active' ? 'Inactive' : 'Active';
+          setBranchAdmins(prev => prev.map(adm => adm.id === adminId ? { ...adm, status: nextStatus } : adm));
+          appendAuditLog('Super Admin', `Toggled Admin Status of ${target.name} to ${nextStatus.toUpperCase()}`);
+        }
       });
     }
   };
@@ -434,43 +702,57 @@ export default function App() {
   };
 
   // 2. BRANCH ADMIN PIPELINES
+  // Fix: Remove Firebase logic, only use API and local state
   const handleAddDoctor = (newDoc) => {
-    addDoctorSync(newDoc).then((created) => {
+    // Ensure branchId is correct MongoDB ObjectId or fallback to branch id
+    const branch = branches.find(b => b.id === newDoc.branchId || b._id === newDoc.branchId);
+    const docPayload = {
+      ...newDoc,
+      branchId: branch?._id || branch?.id || newDoc.branchId
+    };
+    addDoctorSync(docPayload).then((created) => {
       if (created) {
-        setDoctors(prev => {
-          if (prev.some(d => d.id === created.id)) return prev;
-          return [...prev, created];
-        });
-        // Increment doctor and staff count on local branch reference
-        try {
-          const brRef = doc(db, 'branches', newDoc.branchId);
-          const activeBranch = branches.find(b => b.id === newDoc.branchId);
-          if (activeBranch) {
-            updateDoc(brRef, {
-              activeDoctorsCount: (activeBranch.activeDoctorsCount || 0) + 1,
-              staffCount: (activeBranch.staffCount || 0) + 3
-            });
-          }
-        } catch (_) {}
-        appendAuditLog('Branch Admin', `Enrolled specialty Doctor: ${created.name} (${created.specialty})`);
+        // Determine returned role: doctor responses are doctor documents; non-doctor responses return { user }
+        const returnedRole = created.role || created.user?.role || (created.userId ? 'doctor' : undefined);
+        if (returnedRole && returnedRole !== 'doctor') {
+          // Non-doctor: only a User was created, do not add to doctors list
+          appendAuditLog('Branch Admin', `Created user: ${created.user?.name || created.name} with role ${returnedRole}`);
+        } else {
+          // Doctor: append to doctors list
+          setDoctors(prev => {
+            const createdId = created._id || created.id;
+            if (prev.some(d => d._id === createdId || d.id === createdId)) return prev;
+            return [...prev, created];
+          });
+          appendAuditLog('Branch Admin', `Enrolled specialty Doctor: ${created.name} (${created.specialty})`);
+        }
       }
     });
   };
 
+  // Fix: Remove Firebase logic, only use API and local state
   const handleAddPatient = (newPat) => {
+    // Ensure branchId is correct MongoDB ObjectId
+    const branch = branches.find(b => b.id === newPat.branchId || b._id === newPat.branchId) || branches.find(b => b.id === activeBranchId || b._id === activeBranchId);
     const created = {
       ...newPat,
       id: `pat-${Date.now()}`,
-      registeredDate: new Date().toISOString().split('T')[0]
+      registeredDate: new Date().toISOString().split('T')[0],
+      branchId: branch?._id || newPat.branchId
     };
-    setPatients(prev => [...prev, created]);
-    appendAuditLog('Branch Admin', `Admitted Inpatient health case: ${created.name}`);
+    addPatientSync(created).then((saved) => {
+      if (saved) {
+        appendAuditLog('Branch Admin', `Admitted Inpatient health case: ${created.name}`);
+      }
+    });
   };
 
   const handleAddBed = (newBed) => {
+    // Ensure branchId is correct MongoDB ObjectId
+    const branch = branches.find(b => b.id === activeBranchId || b._id === activeBranchId);
     const created = {
       id: `bed-${Date.now()}`,
-      branchId: activeBranchId || 'br-1',
+      branchId: branch?._id || activeBranchId,
       timerDuration: null,
       timerEndsAt: null,
       patientId: null,
@@ -706,7 +988,8 @@ export default function App() {
           avatar: 'SU'
         };
       case 'branch_admin': {
-        const customAdmin = loggedInUser?.role === 'branch_admin' ? branchAdmins.find(a => a.id === loggedInUser.adminId) : null;
+        // Fix: match branch admin by email, not adminId
+        const customAdmin = loggedInUser?.role === 'branch_admin' ? branchAdmins.find(a => a.email === loggedInUser.email) : null;
         return {
           name: customAdmin ? customAdmin.name : 'Mayo Operations Mgr',
           role: customAdmin ? `Admin - ${customAdmin.branchName}` : 'Branch Operations Admin',
@@ -801,12 +1084,26 @@ export default function App() {
           onRegisterBranchAdmin={(adminData) => {
             const newAdmin = {
               ...adminData,
-              id: `adm-${Date.now()}`,
               status: 'Pending',
               permissions: ['Billing Management', 'Bed Lifecycle Control', 'Staff Scheduling']
             };
-            addBranchAdminSync(newAdmin).then(() => {
-              appendAuditLog('Registration Desk', `Transmitted new Branch Admin registration request: ${newAdmin.name} assigned to ${newAdmin.branchName}`);
+            addBranchAdminSync(newAdmin).then((savedAdmin) => {
+              if (savedAdmin) {
+                appendAuditLog('Registration Desk', `Transmitted new Branch Admin registration request: ${newAdmin.name} assigned to ${newAdmin.branchName}`);
+                
+                // Forward notification to Super Admin
+                const notifPayload = {
+                  senderId: 'system',
+                  senderName: 'System Automated Workflow',
+                  senderRole: 'Registration Desk',
+                  title: 'Pending Branch Admin Registration',
+                  message: `New registration request from ${newAdmin.name} for branch: ${newAdmin.branchName}. Please review and authorize in the RBAC panel.`,
+                  urgency: 'Warning',
+                  targetRole: 'super_admin',
+                  timestamp: new Date().toISOString()
+                };
+                addNotificationSync(notifPayload);
+              }
             });
             return newAdmin;
           }}
@@ -828,7 +1125,7 @@ export default function App() {
   }
 
   const activeBranchId = (loggedInUser?.role === 'branch_admin' && loggedInUser.branchId) || 'br-1';
-  const activeBranch = branches.find(b => b.id === activeBranchId) || branches[0] || { id: 'br-1', name: 'Temporary Clinic Branch', city: '', hospitalId: 'hosp-1' };
+  const activeBranch = branches.find(b => b.id === activeBranchId || b._id === activeBranchId) || branches[0] || { id: 'br-1', name: 'Temporary Clinic Branch', city: '', hospitalId: 'hosp-1' };
   const activeHospital = hospitals.find(h => h.id === activeBranch?.hospitalId) || hospitals[0] || { id: 'hosp-1', name: 'MedCore Health Network' };
   const currentBranchAdmin = loggedInUser?.role === 'branch_admin' ? branchAdmins.find(adm => adm.id === loggedInUser.adminId) : null;
   const activeHospitalName = (currentBranchAdmin && currentBranchAdmin.hospitalName) || activeHospital?.name || 'Mayo General Health Group';
@@ -1184,6 +1481,8 @@ export default function App() {
               branch={activeBranch}
               beds={beds.filter(b => b.branchId === activeBranchId)}
               doctors={doctors.filter(d => d.branchId === activeBranchId)}
+              staffMembers={staffMembers.filter(s => s.branchId === activeBranchId)}
+              staffAdmins={staffAdmins.filter(a => a.branchId === activeBranchId)}
               patients={patients.filter(p => p.branchId === activeBranchId)}
               invoices={invoices.filter(i => i.branchId === activeBranchId)}
               labOrders={labOrders.filter(l => l.branchId === activeBranchId)}
@@ -1525,8 +1824,7 @@ export default function App() {
 
                     try {
                       const payload = {
-                        id: `notif-${Date.now()}`,
-                        senderId: auth.currentUser?.uid || 'user',
+                        senderId: loggedInUser?.id || loggedInUser?._id || 'user',
                         senderName: profile.name,
                         senderRole: profile.role,
                         title: compTitle.trim(),

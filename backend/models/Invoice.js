@@ -6,9 +6,9 @@ const invoiceServiceSchema = new mongoose.Schema({
 }, { _id: false });
 
 const invoiceSchema = new mongoose.Schema({
-  patientId: { type: mongoose.Schema.Types.ObjectId, ref: 'Patient', required: true },
+  patientId: { type: String, required: true },
   patientName: { type: String },
-  branchId: { type: mongoose.Schema.Types.ObjectId, ref: 'Branch', required: true },
+  branchId: { type: String, required: true },
   date: { type: String },
   services: [invoiceServiceSchema],
   totalAmount: { type: Number },

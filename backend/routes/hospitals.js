@@ -4,14 +4,14 @@ import { authenticateToken, authorizeRoles } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Get all hospitals (superadmin only)
-router.get('/', authenticateToken, authorizeRoles('superadmin'), async (req, res) => {
+// Get all hospitals (super_admin only)
+router.get('/', authenticateToken, authorizeRoles('super_admin'), async (req, res) => {
   const hospitals = await Hospital.find();
   res.json(hospitals);
 });
 
-// Create hospital (superadmin only)
-router.post('/', authenticateToken, authorizeRoles('superadmin'), async (req, res) => {
+// Create hospital (super_admin only)
+router.post('/', authenticateToken, authorizeRoles('super_admin'), async (req, res) => {
   try {
     const hospital = new Hospital(req.body);
     await hospital.save();
@@ -21,8 +21,8 @@ router.post('/', authenticateToken, authorizeRoles('superadmin'), async (req, re
   }
 });
 
-// Update hospital (superadmin only)
-router.put('/:id', authenticateToken, authorizeRoles('superadmin'), async (req, res) => {
+// Update hospital (super_admin only)
+router.put('/:id', authenticateToken, authorizeRoles('super_admin'), async (req, res) => {
   try {
     const hospital = await Hospital.findByIdAndUpdate(req.params.id, req.body, { new: true });
     res.json(hospital);
@@ -31,8 +31,8 @@ router.put('/:id', authenticateToken, authorizeRoles('superadmin'), async (req, 
   }
 });
 
-// Delete hospital (superadmin only)
-router.delete('/:id', authenticateToken, authorizeRoles('superadmin'), async (req, res) => {
+// Delete hospital (super_admin only)
+router.delete('/:id', authenticateToken, authorizeRoles('super_admin'), async (req, res) => {
   try {
     await Hospital.findByIdAndDelete(req.params.id);
     res.json({ message: 'Hospital deleted' });

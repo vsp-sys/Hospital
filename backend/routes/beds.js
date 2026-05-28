@@ -4,14 +4,14 @@ import { authenticateToken, authorizeRoles } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Get all beds (superadmin, branchadmin, staff)
-router.get('/', authenticateToken, authorizeRoles('superadmin', 'branchadmin', 'staff'), async (req, res) => {
+// Get all beds (super_admin, branch_admin, staff)
+router.get('/', authenticateToken, authorizeRoles('super_admin', 'branch_admin', 'staff'), async (req, res) => {
   const beds = await Bed.find();
   res.json(beds);
 });
 
-// Create bed (superadmin, branchadmin)
-router.post('/', authenticateToken, authorizeRoles('superadmin', 'branchadmin'), async (req, res) => {
+// Create bed (super_admin, branch_admin)
+router.post('/', authenticateToken, authorizeRoles('super_admin', 'branch_admin'), async (req, res) => {
   try {
     const bed = new Bed(req.body);
     await bed.save();
@@ -21,8 +21,8 @@ router.post('/', authenticateToken, authorizeRoles('superadmin', 'branchadmin'),
   }
 });
 
-// Update bed (superadmin, branchadmin, staff)
-router.put('/:id', authenticateToken, authorizeRoles('superadmin', 'branchadmin', 'staff'), async (req, res) => {
+// Update bed (super_admin, branch_admin, staff)
+router.put('/:id', authenticateToken, authorizeRoles('super_admin', 'branch_admin', 'staff'), async (req, res) => {
   try {
     const bed = await Bed.findByIdAndUpdate(req.params.id, req.body, { new: true });
     res.json(bed);
@@ -31,8 +31,8 @@ router.put('/:id', authenticateToken, authorizeRoles('superadmin', 'branchadmin'
   }
 });
 
-// Delete bed (superadmin only)
-router.delete('/:id', authenticateToken, authorizeRoles('superadmin'), async (req, res) => {
+// Delete bed (super_admin only)
+router.delete('/:id', authenticateToken, authorizeRoles('super_admin'), async (req, res) => {
   try {
     await Bed.findByIdAndDelete(req.params.id);
     res.json({ message: 'Bed deleted' });

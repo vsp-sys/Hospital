@@ -8,9 +8,9 @@ const medicineLineSchema = new mongoose.Schema({
 }, { _id: false });
 
 const prescriptionSchema = new mongoose.Schema({
-  patientId: { type: mongoose.Schema.Types.ObjectId, ref: 'Patient', required: true },
+  patientId: { type: String, required: true },
   patientName: { type: String },
-  doctorId: { type: mongoose.Schema.Types.ObjectId, ref: 'Doctor', required: true },
+  doctorId: { type: String, required: true },
   doctorName: { type: String },
   date: { type: String },
   diagnosis: { type: String },

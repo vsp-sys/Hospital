@@ -4,14 +4,14 @@ import { authenticateToken, authorizeRoles } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Get all appointments (superadmin, branchadmin, doctor, staff)
-router.get('/', authenticateToken, authorizeRoles('superadmin', 'branchadmin', 'doctor', 'staff'), async (req, res) => {
+// Get all appointments (super_admin, branch_admin, doctor, staff)
+router.get('/', authenticateToken, authorizeRoles('super_admin', 'branch_admin', 'doctor', 'staff'), async (req, res) => {
   const appointments = await Appointment.find();
   res.json(appointments);
 });
 
-// Create appointment (superadmin, branchadmin, staff)
-router.post('/', authenticateToken, authorizeRoles('superadmin', 'branchadmin', 'staff'), async (req, res) => {
+// Create appointment (super_admin, branch_admin, staff)
+router.post('/', authenticateToken, authorizeRoles('super_admin', 'branch_admin', 'staff'), async (req, res) => {
   try {
     const appointment = new Appointment(req.body);
     await appointment.save();
@@ -21,8 +21,8 @@ router.post('/', authenticateToken, authorizeRoles('superadmin', 'branchadmin', 
   }
 });
 
-// Update appointment (superadmin, branchadmin, doctor, staff)
-router.put('/:id', authenticateToken, authorizeRoles('superadmin', 'branchadmin', 'doctor', 'staff'), async (req, res) => {
+// Update appointment (super_admin, branch_admin, doctor, staff)
+router.put('/:id', authenticateToken, authorizeRoles('super_admin', 'branch_admin', 'doctor', 'staff'), async (req, res) => {
   try {
     const appointment = await Appointment.findByIdAndUpdate(req.params.id, req.body, { new: true });
     res.json(appointment);
@@ -31,8 +31,8 @@ router.put('/:id', authenticateToken, authorizeRoles('superadmin', 'branchadmin'
   }
 });
 
-// Delete appointment (superadmin only)
-router.delete('/:id', authenticateToken, authorizeRoles('superadmin'), async (req, res) => {
+// Delete appointment (super_admin only)
+router.delete('/:id', authenticateToken, authorizeRoles('super_admin'), async (req, res) => {
   try {
     await Appointment.findByIdAndDelete(req.params.id);
     res.json({ message: 'Appointment deleted' });

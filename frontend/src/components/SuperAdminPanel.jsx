@@ -70,6 +70,47 @@ export default function SuperAdminPanel({
   const [editLicDesc, setEditLicDesc] = useState('');
   const [editLicPrice, setEditLicPrice] = useState('');
   const [editLicDuration, setEditLicDuration] = useState('month');
+  const [localLicenses, setLocalLicenses] = useState([]);
+
+  useEffect(() => {
+    const fetchLicenses = async () => {
+      try {
+        const res = await api.get('/licenses');
+        setLocalLicenses(res.data);
+      } catch (err) {
+        console.error('Failed to fetch licenses:', err);
+      }
+    };
+    fetchLicenses();
+  }, []);
+
+  const addLicenseSync = async (license) => {
+    try {
+      const res = await api.post('/licenses', license);
+      setLocalLicenses(prev => [res.data, ...prev]);
+    } catch (err) {
+      console.error('Failed to add license:', err);
+    }
+  };
+
+  const updateLicenseSync = async (id, updates) => {
+    try {
+      const res = await api.put(`/licenses/${id}`, updates);
+      setLocalLicenses(prev => prev.map(l => l.id === id ? res.data : l));
+    } catch (err) {
+      console.error('Failed to update license:', err);
+    }
+  };
+
+  const deleteLicenseSync = async (id) => {
+    try {
+      await api.delete(`/licenses/${id}`);
+      setLocalLicenses(prev => prev.filter(l => l.id !== id));
+    } catch (err) {
+      console.error('Failed to delete license:', err);
+    }
+  };
+
   const [deletingLicId, setDeletingLicId] = useState(null);
 
   const handleAddLicenseSubmit = async (e) => {
@@ -599,12 +640,12 @@ export default function SuperAdminPanel({
 
               {/* Licenses List */}
               <div className="space-y-3 mt-4 max-h-[350px] overflow-y-auto pr-1">
-                {licenses.length === 0 ? (
+                {localLicenses.length === 0 ? (
                   <div className="p-4 text-center text-slate-400 text-xs italic">
                     No licensing tiers configured.
                   </div>
                 ) : (
-                  licenses.map((lic) => {
+                  localLicenses.map((lic) => {
                     const isEditing = editingLicId === lic.id;
                     
                     const getBillingCycleShort = (dur) => {
@@ -1044,9 +1085,12 @@ export default function SuperAdminPanel({
 
       {activeTab === 'rbac' && (() => {
         const filteredAdmins = branchAdmins.filter(adm => {
-          const matchesText = adm.name.toLowerCase().includes(rbacFilterText.toLowerCase()) || 
-            adm.email.toLowerCase().includes(rbacFilterText.toLowerCase()) || 
-            adm.branchName.toLowerCase().includes(rbacFilterText.toLowerCase());
+          const name = adm.name || '';
+          const email = adm.email || '';
+          const branchName = adm.branchName || '';
+          const matchesText = name.toLowerCase().includes(rbacFilterText.toLowerCase()) || 
+            email.toLowerCase().includes(rbacFilterText.toLowerCase()) || 
+            branchName.toLowerCase().includes(rbacFilterText.toLowerCase());
           const matchesStatus = rbacFilterStatus === 'All' || adm.status === rbacFilterStatus;
           return matchesText && matchesStatus;
         });
@@ -1117,7 +1161,7 @@ export default function SuperAdminPanel({
                         <td className="px-5 py-3.5">
                           <div className="flex items-center gap-2">
                             <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-750 flex items-center justify-center font-bold text-xs uppercase shrink-0">
-                              {adm.name.substring(0, 2)}
+                              {(adm.name || 'BA').substring(0, 2)}
                             </div>
                             <div>
                               <span className="font-bold text-slate-900 block">{adm.name}</span>
@@ -1128,7 +1172,7 @@ export default function SuperAdminPanel({
                         <td className="px-5 py-3.5 italic text-slate-800 font-medium font-sans">{adm.branchName}</td>
                         <td className="px-5 py-3.5">
                           <div className="flex flex-wrap gap-1">
-                            {adm.permissions.map((p, idx) => (
+                            {(adm.permissions || []).map((p, idx) => (
                               <span key={idx} className="px-1.5 py-0.5 bg-slate-100 border border-slate-205 text-slate-600 text-[10px] font-medium rounded-md font-sans">
                                 {p}
                               </span>
@@ -1160,7 +1204,7 @@ export default function SuperAdminPanel({
                                   adm.status === 'Active' ? 'bg-rose-50 border-rose-200 text-rose-700 hover:bg-rose-100' : 'bg-emerald-50 border-emerald-200 text-emerald-800 hover:bg-emerald-100'
                                 }`}
                               >
-                                {adm.status === 'Active' ? 'Log out' : 'Authorize key'}
+                                {adm.status === 'Active' ? 'Revoke Access' : 'Authorize key'}
                               </button>
                             )}
 

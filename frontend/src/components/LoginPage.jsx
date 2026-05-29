@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import api from '../api';
+import TwoFactorAuth from './TwoFactorAuth';
 // Firebase removed. Use Axios for API calls.
  import { Lock, Mail, ShieldCheck, Building, Key, AlertCircle, ArrowRight, ArrowLeft,
   Activity, Heart, Users, ShieldAlert, Laptop, Eye, EyeOff, Sparkles, CheckCircle2,
@@ -62,15 +63,10 @@ const GATEWAYS = {
   }
 };
 
-// Example login handler using Axios
+// Login handler using Axios - Step 1: Validate credentials and trigger 2FA
 async function loginUser(email, password) {
   try {
     const res = await api.post('/auth/login', { email, password });
-    // Store token in localStorage for subsequent requests
-    if (res.data.token) {
-      localStorage.setItem('token', res.data.token);
-      localStorage.setItem('user', JSON.stringify(res.data.user));
-    }
     return res.data;
   } catch (err) {
     throw err.response?.data || { message: 'Login failed' };
@@ -121,6 +117,36 @@ export default function LoginPage({
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // 2FA states
+  const [show2FA, setShow2FA] = useState(false);
+  const [tempToken, setTempToken] = useState('');
+  const [userFor2FA, setUserFor2FA] = useState(null);
+
+  // Handle 2FA verification success
+  const handle2FAVerifySuccess = (user) => {
+    setShow2FA(false);
+    setTempToken('');
+    setUserFor2FA(null);
+    if (userFor2FA) {
+      // Check if branch admin needs subscription
+      if (userFor2FA.role === 'branch_admin' && user.requiresSubscription) {
+        // Redirect to subscription gate
+        onLoginSuccess('branch_admin', user, true); // third parameter indicates needs subscription
+      } else {
+        onLoginSuccess(userFor2FA.role, user);
+      }
+    }
+  };
+
+  // Handle back from 2FA
+  const handle2FABack = () => {
+    setShow2FA(false);
+    setTempToken('');
+    setUserFor2FA(null);
+    setSuccess('');
+    setError('');
+  };
 
   // Patient Registration fields
   const [patientName, setPatientName] = useState('');
@@ -235,17 +261,25 @@ export default function LoginPage({
       setLoading(true);
       try {
         const result = await loginUser(emailTrimmed, password);
-        setSuccess('Super Admin cryptographic signature validated. Initializing Core Nodes...');
-        setTimeout(() => {
-          setLoading(false);
-          onLoginSuccess('super_admin', result.user);
-        }, 850);
+        if (result.requires2FA) {
+          // Show 2FA screen
+          setTempToken(result.tempToken);
+          setUserFor2FA({ email: emailTrimmed, role: 'super_admin' });
+          setShow2FA(true);
+          setSuccess('Super Admin cryptographic signature validated. OTP sent to your email.');
+        } else {
+          setSuccess('Super Admin cryptographic signature validated. Initializing Core Nodes...');
+          setTimeout(() => {
+            setLoading(false);
+            onLoginSuccess('super_admin', result.user);
+          }, 850);
+        }
       } catch (err) {
         setLoading(false);
-        // Fallback to hardcoded super admin credentials
+        // Fallback to hardcoded super admin credentials (bypass 2FA for emergency access)
         if (emailTrimmed === 'supmin20@gmail.com' && password === 'supmin@hms20') {
           setLoading(true);
-          setSuccess('Super Admin cryptographic signature validated. Initializing Core Nodes...');
+          setSuccess('Super Admin cryptographic signature validated (emergency bypass). Initializing Core Nodes...');
           setTimeout(() => {
             setLoading(false);
             onLoginSuccess('super_admin', null);
@@ -262,14 +296,21 @@ export default function LoginPage({
       setLoading(true);
       try {
         const result = await loginUser(emailTrimmed, password);
-        setSuccess('Provider identification verified. Authorizing Physician Portal...');
-        setTimeout(() => {
-          setLoading(false);
-          onLoginSuccess('doctor', result.user);
-        }, 850);
+        if (result.requires2FA) {
+          setTempToken(result.tempToken);
+          setUserFor2FA({ email: emailTrimmed, role: 'doctor' });
+          setShow2FA(true);
+          setSuccess('Provider identification verified. OTP sent to your email.');
+        } else {
+          setSuccess('Provider identification verified. Authorizing Physician Portal...');
+          setTimeout(() => {
+            setLoading(false);
+            onLoginSuccess('doctor', result.user);
+          }, 850);
+        }
       } catch (err) {
         setLoading(false);
-        // Fallback to local check for backward compatibility
+        // Fallback to local check for backward compatibility (bypass 2FA)
         const matchedDoc = doctors.find(
           doc => (doc.email?.toLowerCase() === emailTrimmed) && 
                  doc.password === password && 
@@ -280,7 +321,7 @@ export default function LoginPage({
 
         if (matchedDoc || isDefault) {
           setLoading(true);
-          setSuccess('Provider identification verified. Authorizing Physician Portal...');
+          setSuccess('Provider identification verified (fallback). Authorizing Physician Portal...');
           setTimeout(() => {
             setLoading(false);
             const userPayload = matchedDoc || { id: 'doc-1', name: 'Dr. Evelyn Martinez', specialty: 'Cardiology' };
@@ -288,6 +329,184 @@ export default function LoginPage({
           }, 850);
         } else {
           setError('Access Denied: Incorrect doctor email address or password.');
+        }
+      }
+      return;
+    }
+
+    // 3. Nurse & Clinical Staff Check
+    if (selectedRole === 'staff') {
+      setLoading(true);
+      try {
+        const result = await loginUser(emailTrimmed, password);
+        if (result.requires2FA) {
+          setTempToken(result.tempToken);
+          setUserFor2FA({ email: emailTrimmed, role: 'staff' });
+          setShow2FA(true);
+          setSuccess('Staff clearance checked. OTP sent to your email.');
+        } else {
+          setSuccess('Staff clearance checked. Initializing clinical dashboard...');
+          setTimeout(() => {
+            setLoading(false);
+            onLoginSuccess('staff', result.user);
+          }, 850);
+        }
+      } catch (err) {
+        setLoading(false);
+        // Fallback to local check for backward compatibility (bypass 2FA)
+        const matchedStaff = doctors.find(
+          doc => (doc.email?.toLowerCase() === emailTrimmed) && 
+                 doc.password === password && 
+                 (doc.profession === 'nurse' || doc.profession === 'staff')
+        );
+
+        const isDefault = emailTrimmed === 'nurse@gmail.com' && password === 'nurse123';
+
+        if (matchedStaff || isDefault) {
+          setLoading(true);
+          setSuccess('Staff clearance checked (fallback). Initializing clinical dashboard...');
+          setTimeout(() => {
+            setLoading(false);
+            const userPayload = matchedStaff || { id: 'nurse-1', name: 'Nurse Sarah Jenkins, RN' };
+            onLoginSuccess('staff', userPayload);
+          }, 850);
+        } else {
+          setError('Access Denied: Incorrect staff email address or password.');
+        }
+      }
+      return;
+    }
+
+    // 3.5. Staff Admin Check
+    if (selectedRole === 'staff_admin') {
+      setLoading(true);
+      try {
+        const result = await loginUser(emailTrimmed, password);
+        if (result.requires2FA) {
+          setTempToken(result.tempToken);
+          setUserFor2FA({ email: emailTrimmed, role: 'staff_admin' });
+          setShow2FA(true);
+          setSuccess('Staff Administrator clearance validated. OTP sent to your email.');
+        } else {
+          setSuccess('Staff Administrator clearance validated. Initializing operations hub...');
+          setTimeout(() => {
+            setLoading(false);
+            onLoginSuccess('staff_admin', result.user);
+          }, 850);
+        }
+      } catch (err) {
+        setLoading(false);
+        // Fallback to local check for backward compatibility (bypass 2FA)
+        const matchedStaffAdmin = doctors.find(
+          doc => (doc.email?.toLowerCase() === emailTrimmed) && 
+                 doc.password === password && 
+                 (doc.role === 'staff_admin' || doc.profession === 'staff_admin')
+        );
+
+        const isDefault = emailTrimmed === 'staffadmin@gmail.com' && password === 'staff123';
+
+        if (matchedStaffAdmin || isDefault) {
+          setLoading(true);
+          setSuccess('Staff Administrator clearance validated (fallback). Initializing operations hub...');
+          setTimeout(() => {
+            setLoading(false);
+            const userPayload = matchedStaffAdmin || { id: 'staffadmin-1', name: 'Dr. Jane Vance, Chief Nursing Officer', role: 'staff_admin' };
+            onLoginSuccess('staff_admin', userPayload);
+          }, 850);
+        } else {
+          setError('Access Denied: Incorrect staff administrator email address or password. (For testing use: staffadmin@gmail.com / staff123)');
+        }
+      }
+      return;
+    }
+
+    // 4. Branch Admin check
+    if (selectedRole === 'branch_admin') {
+      setLoading(true);
+      try {
+        const result = await loginUser(emailTrimmed, password);
+        if (result.requires2FA) {
+          setTempToken(result.tempToken);
+          setUserFor2FA({ email: emailTrimmed, role: 'branch_admin' });
+          setShow2FA(true);
+          setSuccess('Branch Operations Admin authenticated. OTP sent to your email.');
+        } else {
+          setSuccess('Branch Operations Admin authenticated. Syncing ward databases...');
+          setTimeout(() => {
+            setLoading(false);
+            onLoginSuccess('branch_admin', result.user);
+          }, 850);
+        }
+      } catch (err) {
+        setLoading(false);
+        // Fallback to local check for backward compatibility (bypass 2FA)
+        const matchedAdmin = branchAdmins.find(
+          adm => (adm.email?.toLowerCase() === emailTrimmed) && 
+                 adm.password === password
+        );
+
+        const isDefault = emailTrimmed === 'branchops@gmail.com' && password === 'branch123';
+
+        if (matchedAdmin || isDefault) {
+          const adminObj = matchedAdmin || { id: 'adm-1', branchId: 'br-1', status: 'Active' };
+          if (adminObj.status === 'Active') {
+            setLoading(true);
+            setSuccess('Branch Operations Admin authenticated (fallback). Syncing ward databases...');
+            setTimeout(() => {
+              setLoading(false);
+              onLoginSuccess('branch_admin', { role: 'branch_admin', adminId: adminObj.id, branchId: adminObj.branchId });
+            }, 850);
+          } else if (adminObj.status === 'Pending') {
+            setError('Access Pending: Registration is awaiting approval authorization check from Super Admin.');
+          } else {
+            setError('Access Denied: This administrator account is set to INACTIVE.');
+          }
+        } else {
+          setError('Access Denied: Incorrect administrator email address or password.');
+        }
+      }
+      return;
+    }
+
+    // 5. Patient Portal Authenticated Sign In
+    if (selectedRole === 'patient') {
+      setLoading(true);
+      try {
+        const result = await loginUser(emailTrimmed, password);
+        if (result.requires2FA) {
+          setTempToken(result.tempToken);
+          setUserFor2FA({ email: emailTrimmed, role: 'patient' });
+          setShow2FA(true);
+          setSuccess('Patient identity verified. OTP sent to your email.');
+        } else {
+          setSuccess(`Patient identity verified: ${result.user.name}. Accessing Patient Portal...`);
+          setTimeout(() => {
+            setLoading(false);
+            onLoginSuccess('patient', result.user);
+          }, 850);
+        }
+      } catch (err) {
+        setLoading(false);
+        // Fallback to local check for backward compatibility (bypass 2FA)
+        const matchedPatient = patients.find(
+          p => p.email?.toLowerCase() === emailTrimmed
+        );
+
+        if (matchedPatient) {
+          // Enforce password authentication check
+          if (matchedPatient.password && matchedPatient.password !== password) {
+            setError('Access Denied: Incorrect password credential.');
+            return;
+          }
+
+          setLoading(true);
+          setSuccess(`Patient identity verified (fallback): ${matchedPatient.name}. Accessing Patient Portal...`);
+          setTimeout(() => {
+            setLoading(false);
+            onLoginSuccess('patient', { role: 'patient', patientId: matchedPatient.id });
+          }, 850);
+        } else {
+          setError('Access Denied: Invalid email address or credentials for Patient Portal. Click register above if you need a new account.');
         }
       }
       return;
@@ -471,8 +690,16 @@ export default function LoginPage({
         )}
       </div>
 
-      {/* CORE VIEW MODULE */}
-      {selectedRole === null ? (
+      {/* 2FA VIEW */}
+      {show2FA ? (
+        <TwoFactorAuth 
+          tempToken={tempToken}
+          email={userFor2FA?.email || email}
+          onVerifySuccess={handle2FAVerifySuccess}
+          onBack={handle2FABack}
+          role={userFor2FA?.role || selectedRole}
+        />
+      ) : selectedRole === null ? (
         
         /* 1. SELECTABLE CLINICAL ROLE DEPLOYER */
         <div className="p-6 space-y-4 bg-slate-50/50">

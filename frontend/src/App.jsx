@@ -18,6 +18,7 @@ import StaffWorkspace from './components/StaffWorkspace';
 import DoctorDashboard from './components/DoctorDashboard';
 import PatientPortal from './components/PatientPortal';
 import LoginPage from './components/LoginPage';
+import SaasSubscriptionGate from './components/SaasSubscriptionGate';
 
 
 // API client
@@ -71,6 +72,7 @@ export default function App() {
   const [notifications, setNotifications] = useState(initialNotifications);
   const [licenses, setLicenses] = useState([]);
   const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('token'));
+  const [showSubscriptionGate, setShowSubscriptionGate] = useState(false);
   
   // Real-time Notification States
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
@@ -1055,14 +1057,24 @@ export default function App() {
           initialRole={targetRoleForLogin}
           theme={theme}
           onToggleTheme={toggleTheme}
-          onLoginSuccess={(role, userDetails) => {
+          onLoginSuccess={(role, userDetails, needsSubscription) => {
             setIsLoggedIn(true);
             setActivePersona(role);
             setLoggedInRole(role);
             if (userDetails) {
               setLoggedInUser(userDetails);
+              // Store token and user in localStorage
+              if (userDetails.token) {
+                localStorage.setItem('token', userDetails.token);
+              }
+              localStorage.setItem('user', JSON.stringify(userDetails));
             } else {
               setLoggedInUser(null);
+            }
+            
+            // Show subscription gate for branch admins who need subscription
+            if (needsSubscription) {
+              setShowSubscriptionGate(true);
             }
             
             let roleTitle = 'System user';
@@ -1132,6 +1144,29 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans selection:bg-indigo-600 selection:text-white antialiased">
+      {/* SUBSCRIPTION GATE OVERLAY - Shows for branch admins who need subscription */}
+      {showSubscriptionGate && (
+        <SaasSubscriptionGate
+          licenses={licenses}
+          branchAdminName={loggedInUser?.name || 'Branch Administrator'}
+          branchName={activeBranch?.name || 'Branch'}
+          hospitalName={activeHospitalName}
+          userId={loggedInUser?.id}
+          token={localStorage.getItem('token')}
+          onSubscriptionApproved={(plan) => {
+            // Update user subscription status
+            setLoggedInUser(prev => ({
+              ...prev,
+              subscriptionActive: true,
+              subscriptionPlan: plan.name
+            }));
+            // Hide subscription gate
+            setShowSubscriptionGate(false);
+            appendAuditLog('Branch Admin', `Subscription activated: ${plan.name}`);
+          }}
+        />
+      )}
+
       {/* SYSTEM BROADCAST FLOATING OVERLAY NOTIFICATION */}
       {globalBroadcast && (
         <div className="bg-slate-900 border-b border-slate-800 text-teal-350 px-4 py-2 text-xs font-mono font-medium flex items-center justify-between shadow-xs relative z-50">

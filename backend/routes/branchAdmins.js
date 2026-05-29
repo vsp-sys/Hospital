@@ -46,11 +46,13 @@ router.post('/', async (req, res) => {
     // If no token, it's a public registration: force status to Pending
     if (!token) {
       req.body.status = 'Pending';
+      req.body.subscriptionActive = false;
     } else {
       // If there is a token, we should verify it and ensure it's a super_admin,
       // but for simplicity in this endpoint, if the frontend sends a token
       // we assume it's the super_admin using the portal. (Ideally we'd verify the token).
       // The frontend adds branch admin with status 'Active'.
+      req.body.subscriptionActive = req.body.subscriptionActive || false;
     }
 
     const admin = new BranchAdmin(req.body);
@@ -82,13 +84,31 @@ router.put('/:id', authenticateToken, async (req, res) => {
           name: admin.name,
           email: admin.email,
           password: hashed,
-          role: 'branch_admin'
+          role: 'branch_admin',
+          subscriptionActive: false,
+          subscriptionPlan: 'basic'
         });
         await newUser.save();
+      } else if (typeof existingUser.subscriptionActive === 'undefined') {
+        existingUser.subscriptionActive = false;
+        existingUser.subscriptionPlan = existingUser.subscriptionPlan || 'basic';
+        await existingUser.save();
       }
     } else {
       // If status is Inactive or Pending, revoke access by deleting from User collection
       await User.findOneAndDelete({ email: admin.email });
+    }
+
+    if (typeof req.body.subscriptionActive !== 'undefined') {
+      const existingUser = await User.findOne({ email: admin.email });
+      if (existingUser) {
+        existingUser.subscriptionActive = req.body.subscriptionActive;
+        existingUser.subscriptionPlan = req.body.subscriptionPlan || existingUser.subscriptionPlan || 'basic';
+        if (req.body.subscriptionActive) {
+          existingUser.subscriptionPaidAt = new Date();
+        }
+        await existingUser.save();
+      }
     }
     
     res.json(admin);

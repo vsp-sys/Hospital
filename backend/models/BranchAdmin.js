@@ -9,6 +9,7 @@ const branchAdminSchema = new mongoose.Schema({
   branchName: { type: String, required: true },
   role: { type: String, enum: ['branchadmin'], default: 'branchadmin' },
   status: { type: String, enum: ['Active', 'Inactive', 'Pending'], default: 'Active' },
+  subscriptionActive: { type: Boolean, default: false },
   permissions: [{ type: String }],
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }

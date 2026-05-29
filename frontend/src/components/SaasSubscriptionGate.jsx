@@ -4,15 +4,20 @@ import {
   HelpCircle, Clock, CheckCircle2, Award, ShieldAlert, Key, Zap, Lock,
   QrCode, Terminal, AlertTriangle, ChevronRight, RefreshCw, Layers
 } from 'lucide-react';
+import api from '../api';
 
 export default function SaasSubscriptionGate({ 
   licenses = [], 
   branchAdminName = 'Branch Administrator',
   branchName = 'City General Clinic',
+  hospitalName = '',
+  userId,
+  token,
   onSubscriptionApproved 
 }) {
   const [step, setStep] = useState('plan_selection'); // 'plan_selection' | 'payment_gateway' | 'processing' | 'approved'
   const [selectedPlan, setSelectedPlan] = useState(null);
+  const [isRazorpayLoaded, setIsRazorpayLoaded] = useState(false);
 
   // Fallback plans if licenses is empty (as per user request, if it's empty, we explain why or use adaptive fallbacks)
   const fallbackPlans = [
@@ -21,24 +26,34 @@ export default function SaasSubscriptionGate({
     { id: 'lic-enterprise', name: 'Enterprise Licensing Tier', description: 'Complete backup redundancy, 2FA logs, and active compliance audits', price: 499, duration: 'month' }
   ];
 
-  const activePlans = licenses && licenses.length > 0 ? licenses : [];
+  const activePlans = licenses && licenses.length > 0 ? licenses : fallbackPlans;
 
   // Set default selected plan
   useEffect(() => {
     if (activePlans.length > 0 && !selectedPlan) {
       setSelectedPlan(activePlans[0]);
-    } else if (activePlans.length === 0) {
-      setSelectedPlan(null);
     }
   }, [activePlans, selectedPlan]);
 
+  // Load Razorpay script
+  useEffect(() => {
+    const loadRazorpay = () => {
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.async = true;
+      script.onload = () => {
+        setIsRazorpayLoaded(true);
+      };
+      script.onerror = () => {
+        console.error('Failed to load Razorpay SDK');
+      };
+      document.body.appendChild(script);
+    };
+
+    loadRazorpay();
+  }, []);
+
   // Payment states
-  const [cardName, setCardName] = useState(branchAdminName);
-  const [cardNumber, setCardNumber] = useState('');
-  const [cardExpiry, setCardExpiry] = useState('');
-  const [cardCvv, setCardCvv] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('card'); // 'card' | 'upi'
-  const [isCvvVisible, setIsCvvVisible] = useState(false);
   const [payError, setPayError] = useState('');
 
   // Processing logging timeline states
@@ -52,79 +67,110 @@ export default function SaasSubscriptionGate({
     "Success! Core active licensing token compiled green."
   ];
 
-  // Auto-typing simulator for card format
-  const handleCardNumberChange = (e) => {
-    const rawVal = e.target.value.replace(/\s?/g, '');
-    if (isNaN(Number(rawVal))) return;
-    if (rawVal.length > 16) return;
-    
-    // Split into chunks of 4 characters
-    const parts = [];
-    for (let i = 0; i < rawVal.length; i += 4) {
-      parts.push(rawVal.substring(i, i + 4));
+  // Handle Razorpay payment
+  const handleRazorpayPayment = async () => {
+    if (!selectedPlan) {
+      setPayError('Please select a subscription plan.');
+      return;
     }
-    setCardNumber(parts.join(' '));
-  };
 
-  const handleExpiryChange = (e) => {
-    let val = e.target.value.replace(/\s?/g, '').replace('/', '');
-    if (isNaN(Number(val))) return;
-    if (val.length > 4) return;
-    if (val.length > 2) {
-      val = val.substring(0, 2) + '/' + val.substring(2);
+    try {
+      setStep('processing');
+      setProcessingLogIndex(0);
+
+      // Create Razorpay order
+      const { data: orderData } = await api.post('/payment/create-order', {
+        amount: selectedPlan.price,
+        planName: selectedPlan.name
+      }, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      const { orderId, amount, key } = orderData;
+
+      // Configure Razorpay options
+      const options = {
+        key: key,
+        amount: amount,
+        currency: 'INR',
+        name: 'MedCore HMS',
+        description: `${selectedPlan.name} Subscription`,
+        order_id: orderId,
+        handler: async function (response) {
+          try {
+            // Verify payment on backend
+            const { data: verifyData } = await api.post('/payment/verify-payment', {
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              planName: selectedPlan.name,
+              amount: selectedPlan.price
+            }, {
+              headers: {
+                Authorization: `Bearer ${token}`
+              }
+            });
+
+            // Show processing animation
+            startProcessingAnimation();
+          } catch (error) {
+            console.error('Payment verification error:', error);
+            setPayError('Payment verification failed. Please contact support.');
+            setStep('payment_gateway');
+          }
+        },
+        prefill: {
+          name: branchAdminName,
+          email: '', // Will be filled from user data if available
+          contact: '' // Will be filled from user data if available
+        },
+        theme: {
+          color: '#4F46E5'
+        },
+        modal: {
+          ondismiss: function () {
+            setStep('payment_gateway');
+          }
+        }
+      };
+
+      const razorpay = new window.Razorpay(options);
+      razorpay.open();
+    } catch (error) {
+      console.error('Payment initiation error:', error);
+      setPayError(error.response?.data?.message || 'Failed to initiate payment. Please try again.');
+      setStep('payment_gateway');
     }
-    setCardExpiry(val);
   };
 
-  const handleCvvChange = (e) => {
-    const val = e.target.value.trim();
-    if (isNaN(Number(val))) return;
-    if (val.length > 4) return;
-    setCardCvv(val);
+  // Start processing animation after payment
+  const startProcessingAnimation = () => {
+    setProcessingLogIndex(0);
+    const interval = setInterval(() => {
+      setProcessingLogIndex((prev) => {
+        if (prev >= processingTimeline.length - 1) {
+          clearInterval(interval);
+          setTimeout(() => {
+            setStep('approved');
+          }, 800);
+          return prev;
+        }
+        return prev + 1;
+      });
+    }, 700);
   };
 
-  // Launch simulated transaction processor
+  // Handle proceed to payment (now triggers Razorpay)
   const handleProceedPayment = (e) => {
     e.preventDefault();
-    if (paymentMethod === 'card') {
-      const cleanNum = cardNumber.replace(/\s/g, '');
-      if (cleanNum.length < 16) {
-        setPayError('Security clearance error: Please provide a complete 16-digit credit card number.');
-        return;
-      }
-      if (cardExpiry.length < 5) {
-        setPayError('Security clearance error: Expiry date must be in MM/YY timeline.');
-        return;
-      }
-      if (cardCvv.length < 3) {
-        setPayError('Security clearance error: Secure card validation CVV code is truncated.');
-        return;
-      }
+    if (!isRazorpayLoaded) {
+      setPayError('Payment gateway is loading. Please wait...');
+      return;
     }
-    
-    setPayError('');
-    setStep('processing');
-    setProcessingLogIndex(0);
+    handleRazorpayPayment();
   };
-
-  // Timeline iterator simulator
-  useEffect(() => {
-    if (step === 'processing') {
-      const interval = setInterval(() => {
-        setProcessingLogIndex((prev) => {
-          if (prev >= processingTimeline.length - 1) {
-            clearInterval(interval);
-            setTimeout(() => {
-              setStep('approved');
-            }, 800);
-            return prev;
-          }
-          return prev + 1;
-        });
-      }, 700);
-      return () => clearInterval(interval);
-    }
-  }, [step]);
 
   // Pricing calculations
   const basePrice = selectedPlan ? selectedPlan.price : 0;
@@ -153,7 +199,7 @@ export default function SaasSubscriptionGate({
           <div className="text-left md:text-right">
             <span className="text-xs text-slate-400 block font-semibold">{branchAdminName}</span>
             <span className="text-[11px] text-emerald-400 font-mono flex items-center gap-1 font-bold">
-              <CheckCircle2 className="w-3.5 h-3.5" /> Checked Branch: {branchName}
+              <CheckCircle2 className="w-3.5 h-3.5" /> Checked Branch: {hospitalName || branchName}
             </span>
           </div>
         </div>
@@ -195,78 +241,70 @@ export default function SaasSubscriptionGate({
                 <div className="space-y-1">
                   <strong className="font-extrabold block text-sm">Tenant Licensing Tiers is Empty</strong>
                   <p className="text-rose-800 leading-relaxed font-sans text-xs">
-                    As Tenant Licensing Tiers are empty, the SaaS Plan Tier Enforcements are also empty. Please register licensing plans via the SuperAdmin dashboard to make plans available here.
+                    As Tenant Licensing Tiers are empty, the SaaS Plan Tier Enforcements are also empty. Using default plans for subscription.
                   </p>
                 </div>
               </div>
             )}
 
-            {/* Cards Grid list / Empty State conditional display */}
-            {activePlans.length === 0 ? (
-              <div className="py-12 text-center text-slate-400 font-sans border border-dashed border-slate-205 rounded-2xl bg-slate-50/50">
-                <ShieldAlert className="w-8 h-8 text-slate-400 mx-auto mb-2 animate-pulse" />
-                <span className="text-xs font-semibold block text-slate-705">SaaS Plan Tier Enforcements is Empty</span>
-                <p className="text-[11px] text-slate-450 mt-1 font-sans">No active subscription plan codes configured. SuperAdmin must register licensing plans first.</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                {activePlans.map((plan) => {
-                  const isSelected = selectedPlan && selectedPlan.id === plan.id;
-                  return (
-                    <div 
-                      key={plan.id}
-                      onClick={() => setSelectedPlan(plan)}
-                      className={`border rounded-2xl p-5 cursor-pointer relative transition-all flex flex-col justify-between ${
-                        isSelected 
-                          ? 'bg-gradient-to-br from-indigo-50/50 to-white border-indigo-600 shadow-lg ring-1 ring-indigo-500' 
-                          : 'bg-white border-slate-205 hover:border-slate-305 hover:bg-slate-50/50 hover:shadow-sm'
-                      }`}
-                    >
-                      {isSelected && (
-                        <span className="absolute -top-3 left-4 bg-indigo-605 text-white px-2.5 py-0.5 text-[9px] rounded-full font-mono font-bold tracking-widest uppercase shadow-xs">
-                          Selected Plan
-                        </span>
-                      )}
+            {/* Cards Grid list */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              {activePlans.map((plan) => {
+                const isSelected = selectedPlan && selectedPlan.id === plan.id;
+                return (
+                  <div 
+                    key={plan.id}
+                    onClick={() => setSelectedPlan(plan)}
+                    className={`border rounded-2xl p-5 cursor-pointer relative transition-all flex flex-col justify-between ${
+                      isSelected 
+                        ? 'bg-gradient-to-br from-indigo-50/50 to-white border-indigo-600 shadow-lg ring-1 ring-indigo-500' 
+                        : 'bg-white border-slate-205 hover:border-slate-305 hover:bg-slate-50/50 hover:shadow-sm'
+                    }`}
+                  >
+                    {isSelected && (
+                      <span className="absolute -top-3 left-4 bg-indigo-605 text-white px-2.5 py-0.5 text-[9px] rounded-full font-mono font-bold tracking-widest uppercase shadow-xs">
+                        Selected Plan
+                      </span>
+                    )}
 
-                      <div className="space-y-3">
-                        <div>
-                          <h4 className="text-xs font-mono uppercase tracking-widest text-slate-500 font-extrabold">
-                            {plan.id?.replace('lic-', '')}
-                          </h4>
-                          <h3 className="text-sm font-black text-slate-800 tracking-tight mt-0.5">
-                            {plan.name}
-                          </h3>
-                        </div>
-
-                        <p className="text-[11px] text-slate-605 leading-relaxed font-medium min-h-[36px]">
-                          {plan.description}
-                        </p>
-
-                        <div className="pt-2 border-t border-slate-100 flex items-baseline gap-1 text-slate-800">
-                          <span className="text-xl font-black">${plan.price}</span>
-                          <span className="text-[9.5px] text-slate-400 font-bold font-mono">/ {plan.duration || 'month'}</span>
-                        </div>
+                    <div className="space-y-3">
+                      <div>
+                        <h4 className="text-xs font-mono uppercase tracking-widest text-slate-500 font-extrabold">
+                          {plan.id?.replace('lic-', '')}
+                        </h4>
+                        <h3 className="text-sm font-black text-slate-800 tracking-tight mt-0.5">
+                          {plan.name}
+                        </h3>
                       </div>
 
-                      <div className="mt-4 space-y-2 text-[10.5px] text-slate-600 font-semibold font-sans">
-                        <div className="flex items-center gap-1.5">
-                          <Check className="w-3.5 h-3.5 text-emerald-550 shrink-0" />
-                          <span>Dynamic HIPAA Shield</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <Check className="w-3.5 h-3.5 text-emerald-550 shrink-0" />
-                          <span>Prescription Engine mapping</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <Check className="w-3.5 h-3.5 text-emerald-550 shrink-0" />
-                          <span>{plan.id === 'lic-enterprise' ? 'Unlimited database sync' : 'Check quota constraints'}</span>
-                        </div>
+                      <p className="text-[11px] text-slate-605 leading-relaxed font-medium min-h-[36px]">
+                        {plan.description}
+                      </p>
+
+                      <div className="pt-2 border-t border-slate-100 flex items-baseline gap-1 text-slate-800">
+                        <span className="text-xl font-black">${plan.price}</span>
+                        <span className="text-[9.5px] text-slate-400 font-bold font-mono">/ {plan.duration || 'month'}</span>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-            )}
+
+                    <div className="mt-4 space-y-2 text-[10.5px] text-slate-600 font-semibold font-sans">
+                      <div className="flex items-center gap-1.5">
+                        <Check className="w-3.5 h-3.5 text-emerald-550 shrink-0" />
+                        <span>Dynamic HIPAA Shield</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <Check className="w-3.5 h-3.5 text-emerald-550 shrink-0" />
+                        <span>Prescription Engine mapping</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <Check className="w-3.5 h-3.5 text-emerald-550 shrink-0" />
+                        <span>{plan.id === 'lic-enterprise' ? 'Unlimited database sync' : 'Check quota constraints'}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
 
             {/* Bottom Controls */}
             <div className="pt-4 border-t border-slate-100 flex justify-between items-center bg-slate-50 p-4 rounded-2xl">
@@ -290,13 +328,13 @@ export default function SaasSubscriptionGate({
           <div className="p-6 md:p-8 grid grid-cols-1 md:grid-cols-12 gap-6">
             
             {/* Payment form column left */}
-            <form onSubmit={handleProceedPayment} className="md:col-span-7 space-y-5">
+            <div className="md:col-span-7 space-y-5">
               <div>
                 <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider font-mono">
                   SECURE ENDPOINT CHECKOUT
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Verify credential parameters & complete sandbox simulation deposit.
+                  Complete payment using Razorpay secure gateway.
                 </p>
               </div>
 
@@ -307,137 +345,47 @@ export default function SaasSubscriptionGate({
                 </div>
               )}
 
-              {/* Toggle checkout mode */}
-              <div className="grid grid-cols-2 gap-2 bg-slate-100 p-1 rounded-xl text-xs font-bold">
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod('card')}
-                  className={`py-2 px-3 rounded-lg text-center transition flex justify-center items-center gap-1.5 cursor-pointer ${paymentMethod === 'card' ? 'bg-white text-slate-800 shadow-2xs' : 'text-slate-500 hover:text-slate-700'}`}
-                >
-                  <CreditCard className="w-4 h-4 text-indigo-655" />
-                  <span>Verified Credit Card</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod('upi')}
-                  className={`py-2 px-3 rounded-lg text-center transition flex justify-center items-center gap-1.5 cursor-pointer ${paymentMethod === 'upi' ? 'bg-white text-slate-800 shadow-2xs' : 'text-slate-500 hover:text-slate-700'}`}
-                >
-                  <QrCode className="w-4 h-4 text-emerald-600" />
-                  <span>UPI Live QR Code</span>
-                </button>
+              {/* Plan Summary */}
+              <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 bg-indigo-100 rounded-lg">
+                    <Building className="w-5 h-5 text-indigo-600" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-slate-800">{selectedPlan?.name}</h4>
+                    <p className="text-[11px] text-slate-500">{selectedPlan?.description}</p>
+                  </div>
+                </div>
+                <div className="text-2xl font-black text-slate-800">${selectedPlan?.price}/month</div>
               </div>
 
-              {paymentMethod === 'card' ? (
-                <div className="space-y-3.5">
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-                      Cardholder Billing Name
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={cardName}
-                      onChange={(e) => setCardName(e.target.value)}
-                      className="w-full text-xs p-2.5 bg-slate-50 focus:bg-white border border-slate-250 focus:border-indigo-500 rounded-xl outline-none font-semibold"
-                      placeholder="e.g. Administrator General"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-                      16-Digit Vault Card Number
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        required
-                        value={cardNumber}
-                        onChange={handleCardNumberChange}
-                        className="w-full text-xs p-2.5 pl-10 bg-slate-50 focus:bg-white border border-slate-250 focus:border-indigo-500 rounded-xl outline-none font-mono font-bold tracking-widest"
-                        placeholder="•••• •••• •••• ••••"
-                      />
-                      <CreditCard className="w-4 h-4 text-slate-408 absolute left-3.5 top-3" />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-                        Expiry Date MM/YY
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={cardExpiry}
-                        onChange={handleExpiryChange}
-                        className="w-full text-xs p-2.5 bg-slate-50 focus:bg-white border border-slate-250 focus:border-indigo-500 rounded-xl outline-none font-mono text-center font-bold"
-                        placeholder="12/28"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex justify-between">
-                        <span>CVV Code</span>
-                        <button
-                          type="button"
-                          onClick={() => setIsCvvVisible(!isCvvVisible)}
-                          className="text-[9px] text-indigo-500 hover:underline cursor-pointer"
-                        >
-                          {isCvvVisible ? 'Hide' : 'Show'}
-                        </button>
-                      </label>
-                      <div className="relative">
-                        <input
-                          type={isCvvVisible ? "text" : "password"}
-                          required
-                          value={cardCvv}
-                          onChange={handleCvvChange}
-                          className="w-full text-xs p-2.5 bg-slate-50 focus:bg-white border border-slate-250 focus:border-indigo-500 rounded-xl outline-none font-mono text-center font-bold"
-                          placeholder="•••"
-                        />
-                        <Lock className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3.5" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="p-4 bg-slate-50 border border-slate-205 rounded-2xl flex flex-col items-center justify-center space-y-3.5 animate-fade-in text-center">
-                  <div className="bg-white p-3 border border-slate-200 rounded-xl shadow-2xs">
-                    {/* Generates standard sandbox payment QR code */}
-                    <div className="w-36 h-36 bg-slate-100 flex flex-col items-center justify-center font-mono text-slate-400 border border-dashed border-slate-350 relative rounded-lg">
-                      <QrCode className="w-16 h-16 text-slate-800" />
-                      <span className="text-[9px] uppercase tracking-wider font-extrabold mt-1 text-slate-505">
-                        Scan to Approve
-                      </span>
-                    </div>
-                  </div>
-                  <div>
-                    <span className="text-xs font-bold text-slate-700 block">Deploy Sandbox Payment UPI Node</span>
-                    <span className="text-[10px] text-slate-450 block font-mono">medcore-gateway@ybl • Secure Dynamic Payload</span>
-                  </div>
-                  <div className="p-2.5 bg-indigo-50 rounded-xl text-[10px] text-indigo-700 font-sans max-w-sm">
-                    💡 <strong>Test Mode Tip:</strong> For mock sandbox scanning approval, you can trigger payment processing instantly by clicking standard checkout below.
-                  </div>
-                </div>
-              )}
-
-              {/* Form trigger buttons */}
-              <div className="pt-4 border-t border-slate-150 flex gap-3">
+              {/* Payment Button */}
+              <div className="pt-4 border-t border-slate-150">
+                <button
+                  type="button"
+                  onClick={handleProceedPayment}
+                  disabled={!isRazorpayLoaded || !selectedPlan}
+                  className="w-full py-3 bg-slate-900 hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl text-sm font-bold font-mono transition flex items-center justify-center gap-2 shadow-md cursor-pointer"
+                >
+                  <Lock className="w-4 h-4 text-indigo-400" />
+                  <span>Pay with Razorpay (${totalCharge})</span>
+                </button>
                 <button
                   type="button"
                   onClick={() => setStep('plan_selection')}
-                  className="px-4 py-2 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 font-mono transition cursor-pointer"
+                  className="w-full mt-3 py-2 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 font-mono transition cursor-pointer"
                 >
                   Change Plan
                 </button>
-                <button
-                  type="submit"
-                  className="flex-1 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold font-mono transition flex items-center justify-center gap-1.5 shadow-md cursor-pointer"
-                >
-                  <Lock className="w-3.5 h-3.5 text-indigo-400" />
-                  <span>Process & Approve License State (${totalCharge})</span>
-                </button>
               </div>
-            </form>
+
+              {!isRazorpayLoaded && (
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-xs flex items-center gap-2">
+                  <RefreshCw className="w-4 h-4 text-amber-600 animate-spin shrink-0" />
+                  <span>Loading payment gateway... Please wait.</span>
+                </div>
+              )}
+            </div>
 
             {/* Billing summary card right */}
             <div className="md:col-span-5 bg-slate-50 border border-slate-150 rounded-2xl p-4.5 flex flex-col justify-between space-y-4">
@@ -507,7 +455,7 @@ export default function SaasSubscriptionGate({
               <div className="space-y-1 min-h-[90px] text-[10.5px]">
                 {processingTimeline.slice(0, processingLogIndex + 1).map((log, idx) => (
                   <div key={idx} className="flex items-start gap-1">
-                    <span className="text-slate-500 select-none">&gt;</span>
+                    <span className="text-slate-500 select-none">></span>
                     <span className={idx === processingLogIndex ? 'text-white' : 'text-indigo-400'}>{log}</span>
                   </div>
                 ))}
